@@ -41,7 +41,7 @@ public class UserRepository implements IRepository<User>{
 		try { 
 			user = template.queryForObject(query, rowMapper, username);
 		} catch(DataAccessException e) {
-			
+			//This means that there is no data, but we don't do anything because in this case we return an Optional
 		}
 		return Optional.ofNullable(user);
 	}
@@ -53,7 +53,7 @@ public class UserRepository implements IRepository<User>{
 		try { 
 			user = template.queryForObject(query, rowMapper, id);
 		} catch(DataAccessException e) {
-			
+			//This means that there is no data, but we don't do anything because in this case we return an Optional
 		}
 		return Optional.ofNullable(user);
 	}

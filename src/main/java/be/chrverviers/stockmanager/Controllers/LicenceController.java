@@ -63,7 +63,7 @@ public class LicenceController {
 			return new ResponseEntity<Integer>(HttpStatus.BAD_REQUEST);
 		}
 		try {
-			int tmp =licenceRepo.create(licence);
+			int tmp = licenceRepo.create(licence);
 			return new ResponseEntity<Integer>(tmp, HttpStatus.OK);
 		} catch(Exception e) {
 			e.printStackTrace();

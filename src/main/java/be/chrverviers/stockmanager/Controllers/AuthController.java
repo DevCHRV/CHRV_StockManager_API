@@ -16,6 +16,7 @@ import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.UserRepository;
 import be.chrverviers.stockmanager.Services.CustomUserDetailsService;
 import be.chrverviers.stockmanager.Services.JwtService;
+import io.jsonwebtoken.ExpiredJwtException;
 
 @RestController
 @RequestMapping(value = "api/auth")
@@ -33,6 +34,7 @@ public class AuthController {
 	@PostMapping(value = "/login")
 	public ResponseEntity<String> authenticateUser(@RequestBody LoginDTO loginDto){
 		try {
+			loginDto.setUsername(loginDto.getUsername().toUpperCase());
 			//Try to authenticate the user with the Active Directory
 	        authenticationManager.authenticate(
 	        		new UsernamePasswordAuthenticationToken(
@@ -50,6 +52,8 @@ public class AuthController {
 	        }
 	        //If the user is found, we create and return the token
 	        return new ResponseEntity<String>(jwtService.generateToken(user), HttpStatus.OK);
+		} catch(ExpiredJwtException e) {
+	        return new ResponseEntity<>("Votre session a expiré, veuillez vous reconnecter.", HttpStatus.UNAUTHORIZED);
 		} catch(UsernameNotFoundException e) {
 			//This error is thrown when we fail to add the user to the application's database
 	        return new ResponseEntity<>("Une erreur s'est produite lors de l'ajout de l'utilisateur à la BD.", HttpStatus.BAD_REQUEST);

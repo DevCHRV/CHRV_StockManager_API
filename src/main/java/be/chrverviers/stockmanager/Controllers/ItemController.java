@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
+import be.chrverviers.stockmanager.Repositories.InterventionRepository;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
 import be.chrverviers.stockmanager.Repositories.LicenceRepository;
 import be.chrverviers.stockmanager.Repositories.TypeRepository;
@@ -32,6 +34,9 @@ public class ItemController {
 	LicenceRepository licenceRepo;
 	
 	@Autowired
+	InterventionRepository interventionRepo;
+	
+	@Autowired
 	TypeRepository typeRepo;
 	
 	@GetMapping
@@ -40,11 +45,18 @@ public class ItemController {
 	}
 	
 	@GetMapping(value = "/{id}")
-	public @ResponseBody ResponseEntity<Item> getById(@PathVariable("id") int id) {
+	public @ResponseBody ResponseEntity<Object> getById(@PathVariable("id") int id) {
 		Item item = itemRepo.findById(id).orElse(null);
+		if(item == null)
+			return new ResponseEntity<Object>("Cet item n'existe pas !", HttpStatus.BAD_REQUEST);
 		List<Licence> licences = licenceRepo.findForItem(item);
 		item.setLicence(licences);
-		return new ResponseEntity<Item>(item, HttpStatus.OK);
+		return new ResponseEntity<Object>(item, HttpStatus.OK);
+	}
+	
+	@GetMapping(value = "/{id}/intervention")
+	public @ResponseBody ResponseEntity<Object> getInterventionForId(@PathVariable("id") int id) {
+		return new ResponseEntity<Object>(interventionRepo.findForItemId(id), HttpStatus.OK);
 	}
 	
 	@PutMapping(value="/{id}")
@@ -80,7 +92,7 @@ public class ItemController {
 			return new ResponseEntity<Integer>(tmp, HttpStatus.OK);
 		} catch(Exception e) {
 			e.printStackTrace();
-			return new ResponseEntity<String>("La modification à échoué !", HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<String>("La création à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}
 }

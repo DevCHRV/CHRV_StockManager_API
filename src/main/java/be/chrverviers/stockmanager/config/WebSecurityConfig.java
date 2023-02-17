@@ -94,7 +94,9 @@ public class WebSecurityConfig {
 		//We choose the allowed origins
 		cors.setAllowedOrigins(Arrays.asList(
 				"https://localhost:4200",
-				"http://localhost:4200"
+				"http://localhost:4200",
+				"https://localhost",
+				"http://localhost"
 				));
 		//The allowed methods -> here I allow all HTTP Verbs as we're going to try to make the API Restful compliant
 		cors.setAllowedMethods(Arrays.asList(

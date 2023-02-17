@@ -73,7 +73,7 @@ public class ItemRepository implements IRepository<Item> {
 		try { 
 			item = template.queryForObject(query, rowMapper, id);
 		} catch(DataAccessException e) {
-			e.printStackTrace();
+			//This means that the item is null, so we do nothing as it is nullable
 		}
 		return Optional.ofNullable(item);
 	}
@@ -111,6 +111,14 @@ public class ItemRepository implements IRepository<Item> {
 		template.update(query, t.getReference(), t.getSerial_number(), t.getDescription(), t.getPurchased_at(), t.getReceived_at(), t.getWarranty_expires_at(), t.getPrice(), t.getIs_available()?'1':'0', t.getIs_placed()?'1':'0', t.getUnit(), t.getRoom(), t.getLast_checkup_at(), t.getCheckup_interval(), t.getType().getId(), t.getProvider(), id);
 		return null;
 	}
+	
+	public Item save(Item t) {
+		String query = "UPDATE CCLIB.ITEM t SET t.REFERENCE = ?, t.SERIAL_NUMBER = ?, t.DESCRIPTION = ?, t.PURCHASED_AT = ?, t.RECEIVED_AT = ?, t.WARRANTY_EXPIRES_AT =?, t.PRICE = ?, t.IS_AVAILABLE = ?, t.IS_PLACED = ?, t.UNIT = ?, t.ROOM = ?, t.LAST_CHECKUP_AT = ?, t.CHECKUP_INTERVAL = ?, t.TYPE_ID = ?, t.PROVIDER = ? WHERE t.ID = ?";
+		//Note that we are forced to convert boolean to char(1) by hand because the OS/400 doesn't like booleans and JDBC doesn't make the conversion alone		
+		template.update(query, t.getReference(), t.getSerial_number(), t.getDescription(), t.getPurchased_at(), t.getReceived_at(), t.getWarranty_expires_at(), t.getPrice(), t.getIs_available()?'1':'0', t.getIs_placed()?'1':'0', t.getUnit(), t.getRoom(), t.getLast_checkup_at(), t.getCheckup_interval(), t.getType().getId(), t.getProvider(), t.getId());
+		return null;
+	}
+
 
 	@Override
 	public List<Item> saveAll(List<Item> list){

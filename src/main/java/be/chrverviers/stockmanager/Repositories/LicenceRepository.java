@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.BeansException;
@@ -18,6 +19,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
+
+import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
 import be.chrverviers.stockmanager.Domain.Models.LicenceType;
@@ -83,8 +86,8 @@ public class LicenceRepository implements IRepository<Licence>{
 	
 	@Override
 	public List<Licence> findAll() {
-		String query = "SELECT * FROM CCLIB.LICENCE l JOIN CCLIB.LICENCE_TYPE lt ON l.TYPE_ID=lt.ID";
-		return template.query(query, rowMapper);
+		String query = "SELECT * FROM CCLIB.LICENCE l JOIN CCLIB.LICENCE_TYPE lt ON l.TYPE_ID=lt.ID LEFT JOIN CCLIB.USER u ON l.USER_ID = u.ID";
+		return template.query(query, withUserRowMapper);
 	}
 
 	@Override
@@ -94,7 +97,7 @@ public class LicenceRepository implements IRepository<Licence>{
 		try { 
 			licence = template.queryForObject(query, withUserAndItemRowMapper, id);
 		} catch(DataAccessException e) {
-			e.printStackTrace();
+			//This means that there is no data, but we don't do anything because in this case we return an Optional
 		}
 		return Optional.ofNullable(licence);
 	}
@@ -104,6 +107,17 @@ public class LicenceRepository implements IRepository<Licence>{
 		List<Licence> licences = new ArrayList<Licence>();
 		try { 
 			licences = template.query(query, withUserAndItemRowMapper, item.getId());
+		} catch(DataAccessException e) {
+			e.printStackTrace();
+		}
+		return licences;
+	}
+	
+	public List<Licence> findForIntervention(Intervention intervention){
+		String query = "SELECT * FROM CCLIB.LICENCE l JOIN CCLIB.LICENCE_TYPE t ON l.TYPE_ID = t.ID LEFT JOIN CCLIB.USER u on l.USER_ID = u.ID LEFT JOIN INTERVENTION_LICENCE il ON il.LICENCE_ID = l.ID LEFT JOIN CCLIB.INTERVENTION i on il.INTERVENTION_ID = i.ID WHERE i.ID = ?";
+		List<Licence> licences = new ArrayList<Licence>();
+		try { 
+			licences = template.query(query, withUserAndItemRowMapper, intervention.getId());
 		} catch(DataAccessException e) {
 			e.printStackTrace();
 		}
@@ -127,6 +141,18 @@ public class LicenceRepository implements IRepository<Licence>{
 		}, keyHolder);
 		return keyHolder.getKey().intValue();
 	}
+	
+	public void attach(Licence l, Item i) {
+		Integer userId = l.getUser()!=null ? l.getUser().getId() : null;
+		String query = "UPDATE CCLIB.LICENCE l SET l.ITEM_ID = ?, l.USER_ID = ? WHERE l.ID = ?";
+		template.update(query, i.getId(), userId, l.getId());
+	}
+	
+	public void attachAll(Collection<Licence> list, Item i) {
+		for(Licence l:list) {
+			this.attach(l, i);
+		}
+	}
 
 	@Override
 	public Licence save(Licence t, int id) {
@@ -147,7 +173,6 @@ public class LicenceRepository implements IRepository<Licence>{
 		}
 		return tmp;
 	}
-
 
 	@Override
 	public boolean delete(int id) {

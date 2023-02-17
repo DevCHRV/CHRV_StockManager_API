@@ -67,7 +67,7 @@ public class CustomUserDetailsService implements UserDetailsService{
     	//Create a Mapper that will return a new User from the query
 		AttributesMapper<User> mapper = new AttributesMapper<User>() {
 	           public User mapFromAttributes(Attributes attrs) throws NamingException {
-	        	   return new User(username, (String) attrs.get("sn").get(),(String) attrs.get("givenname").get());
+	        	   return new User(username.toUpperCase(), (String) attrs.get("sn").get(),(String) attrs.get("givenname").get());
 	           }
 	         };
 	    //For some reason .search can only return a list so...
