@@ -3,6 +3,8 @@ package be.chrverviers.stockmanager.Repositories;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +22,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
+import be.chrverviers.stockmanager.Domain.Models.Order;
 import be.chrverviers.stockmanager.Domain.Models.Type;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;
 
@@ -51,11 +54,13 @@ public class ItemRepository implements IRepository<Item> {
 		item.setLast_checkup_at(rs.getDate(13));
 		item.setCheckup_interval(rs.getInt(14));
 		item.setProvider(rs.getString(16));
-		
 		Type type = new Type();
-		type.setId(rs.getInt(17));
-		type.setName(rs.getString(18));
-		type.setDescription(rs.getString(19));
+		type.setId(rs.getInt(18));
+		type.setName(rs.getString(19));
+		type.setDescription(rs.getString(20));
+		type.setExpectedLifetime(rs.getInt(21));
+		type.setTotalQuantity(rs.getInt(22));
+		type.setAvailableQuantity(rs.getInt(23));
 		item.setType(type);
 		return item;
 	};
@@ -68,7 +73,7 @@ public class ItemRepository implements IRepository<Item> {
 
 	@Override
 	public Optional<Item> findById(int id) {
-		String query = "SELECT * FROM CCLIB.ITEM i JOIN CCLIB.TYPE t ON i.TYPE_ID = t.ID WHERE i.ID = ?";
+		String query = "SELECT * FROM CCLIB.ITEM i LEFT JOIN CCLIB.TYPE t ON i.TYPE_ID = t.ID WHERE i.ID = ?";
 		Item item = null;
 		try { 
 			item = template.queryForObject(query, rowMapper, id);
@@ -77,10 +82,32 @@ public class ItemRepository implements IRepository<Item> {
 		}
 		return Optional.ofNullable(item);
 	}
+	
+	public List<Item> findForOrderId(int id) {
+		String query = "SELECT * FROM CCLIB.ITEM i JOIN CCLIB.TYPE t ON i.TYPE_ID = t.ID WHERE i.ORDER_ID = ?";
+		return template.query(query, rowMapper, id);
+	}
+	
+	public List<Item> findForOrder(Order order) {
+		return this.findForOrderId(order.getId());
+	}
+	
+	public void receiveForOrderId(int id) {
+		String query = "UPDATE CCLIB.ITEM i SET i.RECEIVED_AT = ? WHERE i.ORDER_ID = ?";	
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
+		LocalDateTime now = LocalDateTime.now();
+		template.update(query, Date.valueOf(now.toLocalDate()), id);
+	}
+	
+	public void receiveForOrder(Order order) {
+		this.receiveForOrderId(order.getId());
+	}
+
 
 	@Override
 	public int create(Item t) {
 		GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+		Date d = t.getReceived_at()!=null?new Date(t.getReceived_at().getTime()): null;
 		String query = "INSERT INTO CCLIB.ITEM (ID, REFERENCE, SERIAL_NUMBER, DESCRIPTION, PURCHASED_AT, RECEIVED_AT, WARRANTY_EXPIRES_AT, PRICE, IS_AVAILABLE, IS_PLACED, UNIT, ROOM, LAST_CHECKUP_AT, CHECKUP_INTERVAL, TYPE_ID, PROVIDER) VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		template.update(connection -> {
 			PreparedStatement ps =  connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
@@ -88,20 +115,28 @@ public class ItemRepository implements IRepository<Item> {
 			ps.setString(2, t.getSerial_number());
 			ps.setString(3, t.getDescription());
 			ps.setDate(4, new Date(t.getPurchased_at().getTime()));
-			ps.setDate(5, new Date(t.getReceived_at().getTime()));
+			ps.setDate(5, d);
 			ps.setDate(6, new Date(t.getWarranty_expires_at().getTime()));
 			ps.setDouble(7, t.getPrice());
 			ps.setBoolean(8, t.getIs_available());
 			ps.setBoolean(9, t.getIs_placed());
 			ps.setString(10, t.getUnit());
 			ps.setString(11, t.getRoom());
-			ps.setDate(12, new Date(t.getReceived_at().getTime()));
+			ps.setDate(12, new Date(t.getLast_checkup_at().getTime()));
 			ps.setInt(13, t.getCheckup_interval());
 			ps.setInt(14, t.getType().getId());
 			ps.setString(15, t.getProvider());
 			return ps;
 		}, keyHolder);
 		return keyHolder.getKey().intValue();
+	}
+	
+	public List<Integer> createAll(List<Item> list){
+		List<Integer> tmp = new ArrayList();
+		for(Item i : list) {
+			tmp.add(this.create(i));
+		}
+		return tmp;
 	}
 
 	@Override

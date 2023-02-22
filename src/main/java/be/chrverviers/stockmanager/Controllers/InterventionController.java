@@ -17,6 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.DesinstallationInterventionHandler;
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.InstallationInterventionHandler;
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.LicenceDesinstallationInterventionHandler;
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.LicenceInstallationInterventionHandler;
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.LoanInterventionHandler;
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.ReturnInterventionHandler;
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.ResponsibilityChain;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.User;
@@ -28,6 +35,25 @@ import be.chrverviers.stockmanager.Repositories.LicenceRepository;
 @RestController
 @RequestMapping(value = "api/intervention", produces="application/json")
 public class InterventionController {
+	
+	private ResponsibilityChain<Intervention> chain;
+	
+	public InterventionController(
+			@Autowired InstallationInterventionHandler installationInterventionHandler,
+			@Autowired DesinstallationInterventionHandler desinstallationInterventionHandler,
+			@Autowired LoanInterventionHandler loanInterventionHandler,
+			@Autowired ReturnInterventionHandler returnInterventionHandler,
+			@Autowired LicenceInstallationInterventionHandler licenceInstallationInterventionHandler,
+			@Autowired LicenceDesinstallationInterventionHandler licenceDesinstallationInterventionHandler
+			) {
+		this.chain = 
+				installationInterventionHandler.build(
+				desinstallationInterventionHandler,
+				loanInterventionHandler, 
+				returnInterventionHandler,
+				licenceInstallationInterventionHandler,
+				licenceDesinstallationInterventionHandler);
+	}
 	
 	@Autowired
 	InterventionRepository interventionRepo;
@@ -41,12 +67,8 @@ public class InterventionController {
 	@Autowired
 	ItemRepository itemRepo;
 	
-	@Autowired
-	private JavaMailSender emailSender;
-	
 	@GetMapping
 	public @ResponseBody ResponseEntity<List<Intervention>> get() {
-
 		return new ResponseEntity<List<Intervention>>(interventionRepo.findAll(), HttpStatus.OK);
 	}
 	
@@ -77,76 +99,22 @@ public class InterventionController {
 		}
 		User u = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		intervention.setUser(u);
-		try{
+		try {
+			intervention.setId(interventionRepo.create(intervention));
 			updateItemStatus(intervention);
-			updateItemLocation(intervention);
+			interventionRepo.attachAll(intervention.getLicences(), intervention);
+			interventionRepo.attach(intervention.getNotifier(), intervention);
+			//TODO: Create and save the automatic report
+			return new ResponseEntity<Intervention>(intervention, HttpStatus.OK);
 		} catch(IllegalStateException e) {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
-		try {
-			intervention.setId(interventionRepo.create(intervention));
-			interventionRepo.attachAll(intervention.getLicences(), intervention);
-			interventionRepo.attach(intervention.getNotifier(), intervention);
-			licenceRepo.attachAll(intervention.getLicences(), intervention.getItem());
-			itemRepo.save(intervention.getItem());
-			//TODO: Create and save the automatic report
-			return new ResponseEntity<Intervention>(intervention, HttpStatus.OK);
-		} catch(Exception e) {
-			e.printStackTrace();
+		catch(Exception e) {
 			return new ResponseEntity<String>("La création à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}
 	
-	private void updateItemLocation(Intervention intervention) {
-		Item i = intervention.getItem();
-		if(!intervention.getUnit().equals(i.getUnit()))
-			i.setUnit(intervention.getUnit());
-		if(!intervention.getRoom().equals(i.getRoom()))
-			i.setRoom(intervention.getRoom());
-	}
-	
 	private void updateItemStatus(Intervention intervention) throws IllegalStateException {
-		switch(intervention.getType().getId()) {
-			case 1:
-				this.installItem(intervention.getItem());
-				break;
-			case 2:
-				this.uninstallItem(intervention.getItem());
-				break;
-			case 3:
-				this.loanItem(intervention.getItem());
-				break;
-			case 4:
-				this.returnItem(intervention.getItem());
-				break;
-		}
-	}
-	
-	private void installItem(Item i) {
-	    if(!i.getIs_available())
-	        throw new IllegalStateException("Vous ne pouvez pas installer un objet indisponible.");
-	    
-        i.setIs_placed(true);
-        i.setIs_available(false);
-	}
-	
-	private void uninstallItem(Item i) {
-		if(i.getIs_available())
-	        throw new IllegalStateException("Vous ne pouvez désinstaller un objet disponible");
-		
-		i.setIs_placed(false);
-		i.setIs_available(true);
-	}
-	
-	private void loanItem(Item i) {
-	    if(!i.getIs_available())
-	        throw new IllegalStateException("Vous ne pouvez pas prêter un objet indisponible.");
-	    i.setIs_available(false);
-	}
-	
-	private void returnItem(Item i) {
-	    if(i.getIs_available())
-	        throw new IllegalStateException("Vous ne pouvez pas retourner un objet déjà rendu.");
-	    i.setIs_available(true);
+		chain.handle(intervention);
 	}
 }

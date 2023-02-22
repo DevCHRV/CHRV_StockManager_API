@@ -148,12 +148,24 @@ public class LicenceRepository implements IRepository<Licence>{
 		template.update(query, i.getId(), userId, l.getId());
 	}
 	
+	public void detach(Licence l) {
+		Integer userId = l.getUser()!=null ? l.getUser().getId() : null;
+		String query = "UPDATE CCLIB.LICENCE l SET l.ITEM_ID = ?, l.USER_ID = ? WHERE l.ID = ?";
+		template.update(query, null, userId, l.getId());
+	}
+	
 	public void attachAll(Collection<Licence> list, Item i) {
 		for(Licence l:list) {
 			this.attach(l, i);
 		}
 	}
 
+	public void detachAll(Collection<Licence> list) {
+		for(Licence l:list) {
+			this.detach(l);
+		}
+	}
+	
 	@Override
 	public Licence save(Licence t, int id) {
 		Integer userId = t.getUser()!=null ? t.getUser().getId() : null;

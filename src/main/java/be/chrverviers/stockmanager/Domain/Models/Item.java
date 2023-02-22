@@ -26,17 +26,19 @@ public class Item {
 	@ManyToOne(fetch=FetchType.EAGER)
 	@Cascade(CascadeType.DETACH)
 	private Type type;
+
+	
 	private String reference;
 	private String serial_number;
 	private String description;
 	private String provider;
-	private Date purchased_at;
-	private Date received_at;
-	private Date warranty_expires_at;
+	private Date purchased_at = new Date();
+	private Date received_at = new Date();
+	private Date warranty_expires_at = new Date();
 	private double price;
 	private String unit;
 	private String room;
-	private Date last_checkup_at;
+	private Date last_checkup_at = new Date();
 	private int checkup_interval;
 	
 	@OneToMany(fetch=FetchType.LAZY, cascade=javax.persistence.CascadeType.ALL)
@@ -194,6 +196,14 @@ public class Item {
 	public void setIs_placed(boolean is_placed) {
 		this.is_placed = is_placed;
 	}
+	
+//	public Order getOrder() {
+//		return this.order;
+//	}
+//	
+//	public void setOrder(Order order) {
+//		this.order = order;
+//	}
 
 	@Override
 	public String toString() {

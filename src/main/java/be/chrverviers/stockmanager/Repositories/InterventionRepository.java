@@ -14,11 +14,11 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.ResponsibilityChain;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.InterventionType;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
-import be.chrverviers.stockmanager.Domain.Models.Report;
 import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;
 
@@ -26,7 +26,7 @@ import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;
 public class InterventionRepository implements IRepository<Intervention> {
 
 	private JdbcTemplate template;
-	
+		
 	public InterventionRepository(JdbcTemplate template) {
 		super();
 		this.template = template;
@@ -94,7 +94,7 @@ public class InterventionRepository implements IRepository<Intervention> {
 	}
 	
 	public void attach(User notifier, Intervention i) {
-		Integer notifierId = notifier!=null ? notifier.getId() : null;
+		Integer notifierId = (notifier!=null&&notifier.getId()!=0) ? notifier.getId() : null;
 		String query = "UPDATE CCLIB.INTERVENTION i SET i.NOTIFIER_ID = ? WHERE i.ID = ?";
 		template.update(query, notifierId, i.getId());
 	}
@@ -113,8 +113,7 @@ public class InterventionRepository implements IRepository<Intervention> {
 	@Override
 	public Intervention save(Intervention t, int id) {
 		String query = "UPDATE CCLIB.INTERVENTION t SET t.DESCRIPTION = ?, t.EXPECTED_DATE = ?, t.ACTUAL_DATE = ?, t.UNIT = ?, t.ROOM = ?, t.NOTIFIER_ID = ?, t.TYPE_ID = ?, t.TICKET_NUMBER = ? WHERE t.ID = ?";
-		//Note that we are forced to convert boolean to char(1) by hand because the OS/400 doesn't like booleans and JDBC doesn't make the conversion alone		
-		Integer notifierId = t.getNotifier()!=null?t.getNotifier().getId():null;
+		Integer notifierId = (t.getNotifier()!=null&&t.getNotifier().getId()!=0) ? t.getNotifier().getId() : null;
 		template.update(query, t.getDescription(), t.getExpectedDate(), t.getActualDate(), t.getUnit(), t.getRoom(), notifierId, t.getType().getId(), t.getTicketNumber(), id);
 		return null;
 	}

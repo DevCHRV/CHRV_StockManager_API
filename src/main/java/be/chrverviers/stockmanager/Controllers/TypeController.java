@@ -29,14 +29,14 @@ public class TypeController {
 	
 	@GetMapping(value = "/{id}")
 	public @ResponseBody ResponseEntity<Type> findById(@PathVariable("id") int id) {
-		return new ResponseEntity<Type>(typeRepo.findById(id), HttpStatus.OK);
+		return new ResponseEntity<Type>(typeRepo.findById(id).orElse(null), HttpStatus.OK);
 	}
 	
 	@PostMapping(value = "/save")
-	public @ResponseBody ResponseEntity<Type> save() {
+	public @ResponseBody ResponseEntity<Integer> save() {
 		Type t = new Type();
 		t.setName("Random");
 		t.setDescription("Random desc");
-		return new ResponseEntity<Type>(typeRepo.save(t), HttpStatus.OK);
+		return new ResponseEntity<Integer>(typeRepo.create(t), HttpStatus.OK);
 	}
 }

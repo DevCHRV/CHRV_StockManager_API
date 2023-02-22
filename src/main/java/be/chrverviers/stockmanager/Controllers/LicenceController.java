@@ -66,7 +66,6 @@ public class LicenceController {
 			int tmp = licenceRepo.create(licence);
 			return new ResponseEntity<Integer>(tmp, HttpStatus.OK);
 		} catch(Exception e) {
-			e.printStackTrace();
 			return new ResponseEntity<String>("La modification à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}

@@ -16,7 +16,6 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 		  scope=Licence.class,
 		  generator = ObjectIdGenerators.PropertyGenerator.class, 
 		  property = "id")
-
 public class Licence {
 	@Id
 	@GeneratedValue(strategy= GenerationType.IDENTITY)

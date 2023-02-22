@@ -67,7 +67,6 @@ public class ItemController {
 			//licenceRepo.saveAll( item.getLicence());
 			return new ResponseEntity<Object>(itemRepo.findById(item.getId()), HttpStatus.OK);
 		} catch(Exception e) {
-			e.printStackTrace();
 			return new ResponseEntity<Object>("La modification à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -91,7 +90,6 @@ public class ItemController {
 			licenceRepo.saveAll(item.getLicence());
 			return new ResponseEntity<Integer>(tmp, HttpStatus.OK);
 		} catch(Exception e) {
-			e.printStackTrace();
 			return new ResponseEntity<String>("La création à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}

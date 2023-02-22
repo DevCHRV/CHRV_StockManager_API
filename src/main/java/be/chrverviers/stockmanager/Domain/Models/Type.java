@@ -14,7 +14,7 @@ import javax.persistence.OneToMany;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
-public class Type {
+public class Type implements Comparable<Type> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
@@ -90,8 +90,35 @@ public class Type {
 	
 	@Override
 	public String toString() {
-		return String.format("ITEM {id:%s, name:%s, }", this.id, this.name);
+		return String.format("{id:%s, name:%s, description: %s, expectedLifetime: %s, totalQuantity:%s, availableQuantity:%s}", this.id, this.name, this.description, this.expectedLifetime, this.totalQuantity, this.availableQuantity);
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + id;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Type other = (Type) obj;
+		if (id != other.id)
+			return false;
+		return true;
+	}
 	
+	@Override
+	public int compareTo(Type t) {
+		if(t.getId()==this.id)
+			return 0;
+		return t.getId()<this.id ? -1 : 1;
+	}
 }
