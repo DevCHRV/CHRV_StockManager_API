@@ -19,6 +19,10 @@ public class InterventionTypeController {
 	@Autowired
 	InterventionTypeRepository typeRepo;
 	
+	/**
+	 * Simple GET method
+	 * @return all the InterventionTypes
+	 */
 	@GetMapping
 	public @ResponseBody ResponseEntity<List<InterventionType>> get() {
 		return new ResponseEntity<List<InterventionType>>(typeRepo.findAll(), HttpStatus.OK);

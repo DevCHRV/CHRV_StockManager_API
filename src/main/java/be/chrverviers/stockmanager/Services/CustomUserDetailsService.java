@@ -57,6 +57,13 @@ public class CustomUserDetailsService implements UserDetailsService{
                 );
     }
     
+    /**
+     * Method that is called when the user is successfully authenticated by the LDAP server but doesn't exist in our
+     * database yet.
+     * This method will query the LDAP
+     * @param username
+     * @return
+     */
     public int buildUser(String username) {
     	//Create a query to the LDAP Server
     	LdapQuery query = query()

@@ -22,6 +22,11 @@ import io.jsonwebtoken.ExpiredJwtException;
 @RequestMapping(value = "api/auth")
 public class AuthController {
 	
+	/**
+	 * NB: There is no logout method because Spring is configured to use JWT Authentication which means that the 
+	 * User's informations are created when Spring validates the token and are wiped after the request's completion
+	 */
+	
 	@Autowired
 	AuthenticationManager authenticationManager;
 	@Autowired

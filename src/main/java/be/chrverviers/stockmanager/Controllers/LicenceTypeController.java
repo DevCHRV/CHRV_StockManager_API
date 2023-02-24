@@ -24,20 +24,35 @@ public class LicenceTypeController {
 	@Autowired
 	LicenceTypeRepository typeRepo;
 	
+	/**
+	 * Simple GET method
+	 * @return all the LicenceTypes
+	 */
 	@GetMapping(value = "")
 	public @ResponseBody ResponseEntity<List<LicenceType>> get() {
 		return new ResponseEntity<List<LicenceType>>(typeRepo.findAll(), HttpStatus.OK);
 	}
 	
+	/**
+	 * Simple GET method
+	 * @param id the id of the licence type you're looking for
+	 * @return the licence type or null
+	 */
 	@GetMapping(value = "/{id}")
 	public @ResponseBody ResponseEntity<LicenceType> findById(@PathVariable("id") int id) {
 		return new ResponseEntity<LicenceType>(typeRepo.findById(id), HttpStatus.OK);
 	}
 	
+	/**
+	 * Simple POST method
+	 * @return the licence type with it's generated id or an error message
+	 */
 	@PostMapping(value = "/save")
 	public @ResponseBody ResponseEntity<LicenceType> save() {
-		LicenceType t = new LicenceType();
-		t.setName("Random");
-		return new ResponseEntity<LicenceType>(typeRepo.save(t), HttpStatus.OK);
+		//TODO the method
+		return null;
+//		LicenceType t = new LicenceType();
+//		t.setName("Random");
+//		return new ResponseEntity<LicenceType>(typeRepo.save(t), HttpStatus.OK);
 	}
 }

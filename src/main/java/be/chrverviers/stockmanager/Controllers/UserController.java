@@ -20,6 +20,10 @@ public class UserController {
 	@Autowired
 	UserRepository userRepo;
 	
+	/**
+	 * Simple GET method
+	 * @return all the users
+	 */
 	@GetMapping
 	public @ResponseBody ResponseEntity<List<User>> get() {
 		return new ResponseEntity<List<User>>(userRepo.findAll(), HttpStatus.OK);

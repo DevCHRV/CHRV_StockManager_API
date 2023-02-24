@@ -22,21 +22,39 @@ public class TypeController {
 	@Autowired
 	TypeRepository typeRepo;
 	
+	/**
+	 * Simple GET method
+	 * @return all the items types
+	 */
 	@GetMapping(value = "")
 	public @ResponseBody ResponseEntity<List<Type>> get() {
 		return new ResponseEntity<List<Type>>(typeRepo.findAll(), HttpStatus.OK);
 	}
 	
+	/**
+	 * Simple GET method
+	 * @param id the id of the item type you're looking for
+	 * @return the type or an error message
+	 */
 	@GetMapping(value = "/{id}")
-	public @ResponseBody ResponseEntity<Type> findById(@PathVariable("id") int id) {
-		return new ResponseEntity<Type>(typeRepo.findById(id).orElse(null), HttpStatus.OK);
+	public @ResponseBody ResponseEntity<Object> findById(@PathVariable("id") int id) {
+		Type t = typeRepo.findById(id).orElse(null);
+		if(t==null)
+			return new ResponseEntity<Object>("Ce type n'existe pas !", HttpStatus.BAD_REQUEST);
+		return new ResponseEntity<Object>(t, HttpStatus.OK);
 	}
 	
+	/**
+	 * Simple POST method
+	 * @return the type with it's generated id or an error message
+	 */
 	@PostMapping(value = "/save")
 	public @ResponseBody ResponseEntity<Integer> save() {
-		Type t = new Type();
-		t.setName("Random");
-		t.setDescription("Random desc");
-		return new ResponseEntity<Integer>(typeRepo.create(t), HttpStatus.OK);
+		//TODO
+		return null;
+//		Type t = new Type();
+//		t.setName("Random");
+//		t.setDescription("Random desc");
+//		return new ResponseEntity<Integer>(typeRepo.create(t), HttpStatus.OK);
 	}
 }

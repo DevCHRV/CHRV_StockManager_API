@@ -21,6 +21,6 @@ public class JwtExceptionHandler extends HandlerExceptionResolverComposite{
     
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<String> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request){
-        return new ResponseEntity<>("Votre session a expiré, veuillez vous reconnecter.", HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>("Vous n'avez pas l'autorisation d'accéder à ceci.", HttpStatus.FORBIDDEN);
     }
 }

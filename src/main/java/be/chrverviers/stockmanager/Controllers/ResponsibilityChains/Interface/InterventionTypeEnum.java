@@ -1,5 +1,10 @@
 package be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface;
 
+/**
+ * Enum that represent all the Intervention Types
+ * @author colincyr
+ * The value of the Enum's occurrence MUST be the id of the corresponding type in the database
+ */
 public enum InterventionTypeEnum {
 	INSTALLATION(1),
 	DESINSTALLATION(2),

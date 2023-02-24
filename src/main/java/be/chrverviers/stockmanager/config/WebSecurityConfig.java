@@ -34,12 +34,9 @@ import be.chrverviers.stockmanager.Repositories.UserRepository;
 public class WebSecurityConfig {
 	
 	private JwtAuthenticationFilter jwtAuthFilter;
-	//private AuthenticationProvider authenticationProvider;
-	private AuthenticationManager authenticationManager;
 	
 	public WebSecurityConfig(JwtAuthenticationFilter jwtFilter, AuthenticationManager authenticationManager) {
 		this.jwtAuthFilter = jwtFilter;
-		this.authenticationManager = authenticationManager;
 	}
 	
 	/**
@@ -65,21 +62,6 @@ public class WebSecurityConfig {
 		return http.build();
 	}
 	
-	//OU=Student,OU=Informatique,OU=Administratifs,OU=Chrv_Users,DC=chplt,DC=be
-	  
-//	@Bean
-//	public AuthenticationManager authenticationManager(AuthenticationConfiguration  config) throws Exception {
-//		
-//	ActiveDirectoryLdapAuthenticationProvider ldapProvider = new ActiveDirectoryLdapAuthenticationProvider(
-//			"ldap://chplt.be",
-//			"chplt.be",
-//			"DC=chplt,DC=be");
-//		System.out.println("--- AUTHENTICATION MANAGER BEAN ---");
-//		
-//		return config.getAuthenticationManager();
-//	}
-
-//$2a$10$1TXSRpdaMUvLwv3etbjHyOy7vs3hVLcPxCb7UH9Inybze6Uf/drLe
 	/*
 	 * Setup our own CORS configuration
 	 * We allow both the development URLs
