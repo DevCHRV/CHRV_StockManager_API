@@ -3,6 +3,7 @@ package be.chrverviers.stockmanager.config;
 import java.io.IOException;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.WebUtils;
+
 import be.chrverviers.stockmanager.Services.JwtService;
 import io.jsonwebtoken.ExpiredJwtException;
 
@@ -31,13 +34,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 			throws ServletException, IOException {
 		try {
 			String authHeader = request.getHeader("Authorization");
+			
+			Cookie cookie = WebUtils.getCookie(request, "auth.jwt_token");
 
-			if(authHeader==null || !authHeader.startsWith("Bearer ")) {
+			if(cookie==null) {
 				filterChain.doFilter(request, response);
 				return;
 			}
-			// Start index seven to pick what is after 'Bearer '
-			String jwt = authHeader.substring(7);
+			
+			
+//			if(authHeader==null || !authHeader.startsWith("Bearer ")) {
+//				filterChain.doFilter(request, response);
+//				return;
+//			}
+			//Start index seven to pick what is after 'Bearer '
+//			String jwt = authHeader.substring(7);
+//			String username = jwtService.extractUsername(jwt);
+			
+			String jwt = cookie.getValue();
 			String username = jwtService.extractUsername(jwt);
 
 			//We check that the username exist in the token, and that there is no ongoing connection

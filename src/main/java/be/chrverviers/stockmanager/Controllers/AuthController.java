@@ -1,7 +1,14 @@
 package be.chrverviers.stockmanager.Controllers;
 
+import java.util.Date;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,7 +44,7 @@ public class AuthController {
 	CustomUserDetailsService customUserDetailsService;
 
 	@PostMapping(value = "/login")
-	public ResponseEntity<String> authenticateUser(@RequestBody LoginDTO loginDto){
+	public ResponseEntity<Object> authenticateUser(@RequestBody LoginDTO loginDto, HttpServletResponse request){
 		try {
 			loginDto.setUsername(loginDto.getUsername().toUpperCase());
 			//Try to authenticate the user with the Active Directory
@@ -56,7 +63,16 @@ public class AuthController {
 	        	user = userRepository.findByUsername(loginDto.getUsername()).orElseThrow(()->new UsernameNotFoundException("User not found !"));
 	        }
 	        //If the user is found, we create and return the token
-	        return new ResponseEntity<String>(jwtService.generateToken(user), HttpStatus.OK);
+	        String token = jwtService.generateToken(user);
+	        
+	        Cookie cookie = new Cookie("auth.jwt_token", token);
+    	        cookie.setSecure(true);
+    	        cookie.setHttpOnly(true);
+    	        cookie.setPath("/");
+    	        cookie.setMaxAge(1 * 60 * 60 * 24);
+	        request.addCookie(cookie);
+	        
+	        return new ResponseEntity<Object>(user, HttpStatus.OK);
 		} catch(ExpiredJwtException e) {
 	        return new ResponseEntity<>("Votre session a expiré, veuillez vous reconnecter.", HttpStatus.UNAUTHORIZED);
 		} catch(UsernameNotFoundException e) {
@@ -68,4 +84,15 @@ public class AuthController {
 	        return new ResponseEntity<>("Cet utilisateur n'existe pas ou n'est pas autorisé !", HttpStatus.BAD_REQUEST);
 		}
     }
+	
+	@PostMapping(value = "/logout")
+	public ResponseEntity<Object> logout(HttpServletResponse request){
+        Cookie cookie = new Cookie("auth.jwt_token", null);
+	        cookie.setSecure(true);
+	        cookie.setHttpOnly(true);
+	        cookie.setPath("/");
+	        cookie.setMaxAge(0);
+        request.addCookie(cookie);
+        return new ResponseEntity<Object>(HttpStatus.OK);
+	}
 }
