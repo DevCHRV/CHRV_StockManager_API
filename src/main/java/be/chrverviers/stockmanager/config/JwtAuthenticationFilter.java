@@ -20,6 +20,8 @@ import org.springframework.web.util.WebUtils;
 
 import be.chrverviers.stockmanager.Services.JwtService;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.MalformedJwtException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter{
@@ -67,10 +69,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 				}
 			}
 			filterChain.doFilter(request, response);
-		} catch(ExpiredJwtException e) {
+		} catch(JwtException e) {
+			this.clearCookies(response);
+			response.sendError(401);
+		} catch(IllegalArgumentException e) {
+			this.clearCookies(response);
 			response.sendError(401);
 		} catch(UsernameNotFoundException e) {
+			this.clearCookies(response);
 			response.sendError(401);
 		}
+	}
+	
+	private void clearCookies(HttpServletResponse  response) {
+        Cookie cookie = new Cookie("auth.jwt_token", null);
+        cookie.setSecure(true);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
 	}
 }
