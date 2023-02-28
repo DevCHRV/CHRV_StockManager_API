@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,6 +84,7 @@ public class InterventionController {
 	 * Simple GET method 
 	 * @return all the Interventions
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping
 	public @ResponseBody ResponseEntity<List<Intervention>> get() {
 		return new ResponseEntity<List<Intervention>>(interventionRepo.findAll(), HttpStatus.OK);
@@ -92,6 +94,7 @@ public class InterventionController {
 	 * @param id the id of the intervention you're looking for
 	 * @return the Intervention that has the requested id or an error message
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping(value = "/{id}")
 	public @ResponseBody ResponseEntity<Object> getById(@PathVariable("id") int id) {
 		//Get the intervention
@@ -108,6 +111,7 @@ public class InterventionController {
 	 * @param intervention the new value of the intervention you're looking to update
 	 * @return the updated Intervention or an error message
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@PutMapping(value="/{id}")
 	public @ResponseBody ResponseEntity<Object> update(@PathVariable("id") int id, @RequestBody Intervention intervention){
 		if(id!=intervention.getId())
@@ -126,6 +130,7 @@ public class InterventionController {
 	 * @param intervention the intervention you're looking to create
 	 * @return the intervention with it's generated id or an error message
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@PostMapping(value = "/")
 	public @ResponseBody Object save(@RequestBody Intervention intervention) {
 		//Simple checks for data validity

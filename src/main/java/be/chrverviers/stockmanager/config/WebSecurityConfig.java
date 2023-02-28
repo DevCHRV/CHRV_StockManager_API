@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.expression.SecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +21,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -31,6 +33,7 @@ import be.chrverviers.stockmanager.Repositories.UserRepository;
 
 
 @Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig {
 	
 	private JwtAuthenticationFilter jwtAuthFilter;
@@ -47,12 +50,16 @@ public class WebSecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		//Disable default CORS to allow it to be overwritten by the Bean bellow
 		http.cors().and().csrf().disable();
+		//Here we setup the roles' hierarchy
+		http.authorizeRequests().expressionHandler(securityExpressionHandler());
 		//Here we authorize access to the login url for everyone
 		http.authorizeRequests()
 			//.expressionHandler(webSecurityExpressionHandler())
 				.antMatchers("/api/auth/login").permitAll().and()
+		//And we block access to the rest of the api for unauthenticated users
 			.authorizeRequests()
 				.antMatchers("/api/**").authenticated();
+		http.authorizeRequests().antMatchers("/api/auth/item").access("hasRole('ROLE_ADM')");
 		//Specify that we don't need Spring to store user session info
 		http.sessionManagement()
 		.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -99,12 +106,11 @@ public class WebSecurityConfig {
 		return roleHierarchy;
 	}
 	
-//	@Bean
-//	public DefaultWebSecurityExpressionHandler webSecurityExpressionHandler() {
-//	    DefaultWebSecurityExpressionHandler expressionHandler = new DefaultWebSecurityExpressionHandler();
-//	    expressionHandler.setRoleHierarchy(roleHierarchy());
-//	    return expressionHandler;
-//	}
+	private SecurityExpressionHandler<FilterInvocation> securityExpressionHandler() {
+	    DefaultWebSecurityExpressionHandler expressionHandler = new DefaultWebSecurityExpressionHandler();
+	    expressionHandler.setRoleHierarchy(roleHierarchy());
+	    return expressionHandler;
+	}
 	
 
 }

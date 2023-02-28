@@ -35,6 +35,8 @@ public class UserRepository implements IRepository<User>{
 		return template.query(query, rowMapper);
 	}
 
+	//		String query = "SELECT * FROM CCLIB.USER u JOIN CCLIB.USER_ROLE ur ON ur.USER_ID = u.ID JOIN CCLIB.ROLE r ON ur.ROLE_ID = r.ID  WHERE u.USERNAME = ?";
+	
 	public Optional<User> findByUsername(String username){
 		String query = "SELECT * FROM CCLIB.USER WHERE USERNAME = ?";
 		User user = null;

@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Role;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,6 +46,7 @@ public class ItemController {
 	 * Simple GET method
 	 * @return all the items
 	 */
+	@PreAuthorize("hasRole('PGM')")
 	@GetMapping
 	public @ResponseBody ResponseEntity<List<Item>> get() {
 		return new ResponseEntity<List<Item>>(itemRepo.findAll(), HttpStatus.OK);
@@ -54,6 +57,7 @@ public class ItemController {
 	 * @param id the id of the item you're looking for
 	 * @return the item that has the requested id or an error message
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping(value = "/{id}")
 	public @ResponseBody ResponseEntity<Object> getById(@PathVariable("id") int id) {
 		//Get the item
@@ -73,6 +77,7 @@ public class ItemController {
 	 * @param id the id of the item for which you wish to get the interventions
 	 * @return the interventions concerning the item or an error message
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping(value = "/{id}/intervention")
 	public @ResponseBody ResponseEntity<Object> getInterventionForId(@PathVariable("id") int id) {
 		Item i = itemRepo.findById(id).orElse(null);
@@ -87,6 +92,7 @@ public class ItemController {
 	 * @param id the id of the item you're looking to update
 	 * @return the update item or an error message
 	 */
+	@PreAuthorize("hasRole('PGM')")
 	@PutMapping(value="/{id}")
 	public @ResponseBody ResponseEntity<Object> update(@PathVariable("id") int id, @RequestBody Item item){
 		if(id!=item.getId())
@@ -109,6 +115,7 @@ public class ItemController {
 	 * @param item the item you want to save
 	 * @return the item with it's generated id or an error message
 	 */
+	@PreAuthorize("hasRole('PGM')")
 	@PostMapping(value = "/")
 	public @ResponseBody Object save(@RequestBody Item item) {
 		if(item.getSerial_number()==null) {

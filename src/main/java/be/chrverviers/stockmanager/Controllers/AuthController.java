@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import be.chrverviers.stockmanager.Domain.DTO.LoginDTO;
 import be.chrverviers.stockmanager.Domain.Models.User;
+import be.chrverviers.stockmanager.Repositories.RoleRepository;
 import be.chrverviers.stockmanager.Repositories.UserRepository;
 import be.chrverviers.stockmanager.Services.CustomUserDetailsService;
 import be.chrverviers.stockmanager.Services.JwtService;
@@ -38,6 +39,8 @@ public class AuthController {
 	AuthenticationManager authenticationManager;
 	@Autowired
 	UserRepository userRepository;
+	@Autowired
+	RoleRepository roleRepository;
 	@Autowired
 	JwtService jwtService;
 	@Autowired
@@ -62,11 +65,12 @@ public class AuthController {
 	        	//Now we try to get it from the DB again, if it doesn't exist then it means something went wrong with the User creation
 	        	user = userRepository.findByUsername(loginDto.getUsername()).orElseThrow(()->new UsernameNotFoundException("User not found !"));
 	        }
+	        user.setRoles(roleRepository.findForUser(user));
 	        //If the user is found, we create and return the token
 	        String token = jwtService.generateToken(user);
 	        
 	        Cookie cookie = new Cookie("auth.jwt_token", token);
-    	        cookie.setSecure(true);
+    	        cookie.setSecure(false);
     	        cookie.setHttpOnly(true);
     	        cookie.setPath("/");
     	        cookie.setMaxAge(1 * 60 * 60 * 24);

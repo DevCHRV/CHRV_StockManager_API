@@ -48,7 +48,7 @@ public class User implements UserDetails {
 			name="user_id", referencedColumnName="id"),
 		inverseJoinColumns= @JoinColumn(
 			name="role_id", referencedColumnName="id"))
-	private Set<Role> roles = new HashSet<>();
+	private List<Role> roles = new ArrayList<>();
 	
 	@OneToMany(mappedBy="user",fetch=FetchType.LAZY)
 	@JsonIdentityReference(alwaysAsId=true)
@@ -70,7 +70,7 @@ public class User implements UserDetails {
 		this.lastname = lastname;
 	}
 
-	public User(String username, String firstname, String lastname, Set<Role> roles) {
+	public User(String username, String firstname, String lastname, List<Role> roles) {
 		super();
 		this.username = username;
 		this.firstname = firstname;
@@ -78,7 +78,7 @@ public class User implements UserDetails {
 		this.roles = roles;
 	}
 	
-	public User(int id, String username, String firstname, String lastname, Set<Role> roles, Set<Licence> licences) {
+	public User(int id, String username, String firstname, String lastname, List<Role> roles, Set<Licence> licences) {
 		super();
 		this.id = id;
 		this.username = username;
@@ -120,11 +120,11 @@ public class User implements UserDetails {
 		this.lastname = lastname;
 	}
 	
-	public Set<Role> getRoles() {
+	public List<Role> getRoles() {
 		return roles;
 	}
 
-	public void setRoles(Set<Role> roles) {
+	public void setRoles(List<Role> roles) {
 		this.roles = roles;
 	} 
 	
@@ -137,7 +137,6 @@ public class User implements UserDetails {
 	} 
 
 	@Override
-	@JsonIgnore
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 	    List<GrantedAuthority> authorities
 	      = new ArrayList<>();
@@ -183,6 +182,6 @@ public class User implements UserDetails {
 
 	@Override
 	public String getPassword() {
-		return null;
+		return "";
 	}
 }

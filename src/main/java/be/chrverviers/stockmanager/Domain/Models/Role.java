@@ -1,5 +1,6 @@
 package be.chrverviers.stockmanager.Domain.Models;
 
+import java.util.Collections;
 import java.util.Set;
 
 import javax.persistence.Entity;
@@ -33,10 +34,14 @@ public class Role {
               name = "role_id", referencedColumnName = "id"), 
             inverseJoinColumns = @JoinColumn(
               name = "privilege_id", referencedColumnName = "id"))
-	private Set<Privilege> privileges;
+	private Set<Privilege> privileges = Collections.emptySet();
 	
 	public int getId() {
 		return id;
+	}
+	
+	public void setId(int id) {
+		this.id = id;
 	}
 	
     public String getName() {

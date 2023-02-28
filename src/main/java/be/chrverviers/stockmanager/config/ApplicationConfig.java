@@ -26,6 +26,7 @@ import org.springframework.security.ldap.server.UnboundIdContainer;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import be.chrverviers.stockmanager.Repositories.UserRepository;
+import be.chrverviers.stockmanager.Services.CustomUserDetailsService;
 
 
 @Configuration
@@ -78,14 +79,15 @@ public class ApplicationConfig {
      * authenticated by the LDAP
      */
 	@Bean
-	public UserDetailsService userDetailsService() {
-		return new UserDetailsService() {
-			
-			@Override
-			public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-				return userRepository.findByUsername(username)
-						.orElseThrow(()->new UsernameNotFoundException("User with these credentials not found"));
-			}
-		};
+	public UserDetailsService userDetailsService(@Autowired CustomUserDetailsService userDetailsService) {
+		return userDetailsService;
+//		return new UserDetailsService() {
+//			
+//			@Override
+//			public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+//				return userRepository.findByUsername(username)
+//						.orElseThrow(()->new UsernameNotFoundException("User with these credentials not found"));
+//			}
+//		};
 	}
 }

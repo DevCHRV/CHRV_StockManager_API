@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import be.chrverviers.stockmanager.Domain.Models.User;
+import be.chrverviers.stockmanager.Repositories.RoleRepository;
 import be.chrverviers.stockmanager.Repositories.UserRepository;
 import static org.springframework.ldap.query.LdapQueryBuilder.query;
 
@@ -32,6 +33,8 @@ public class CustomUserDetailsService implements UserDetailsService{
 	@Autowired
 	private UserRepository userRepository;
 	@Autowired
+	private RoleRepository roleRepository;
+	@Autowired
     private LdapTemplate ldapTemplate;
 
     @Override
@@ -40,21 +43,9 @@ public class CustomUserDetailsService implements UserDetailsService{
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found with username or email: "+ username));
-        Set<GrantedAuthority> authorities = user
-                .getRoles()
-                .stream()
-                .map((role) -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toSet());
+        user.setRoles(roleRepository.findForUser(user));
 
-        return new org.springframework.security.core.userdetails.User(
-        		user.getUsername(),
-        		null,
-                //user.getPassword(),
-                true,
-                true,
-                true,
-                true,
-                authorities
-                );
+        return user;
     }
     
     /**
