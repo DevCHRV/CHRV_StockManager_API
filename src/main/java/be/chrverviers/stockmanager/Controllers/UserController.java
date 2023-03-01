@@ -72,9 +72,8 @@ public class UserController {
 		if(id!=user.getId())
 			return new ResponseEntity<Object>("Cet utilisateur n'existe pas !", HttpStatus.BAD_REQUEST);
 				
-		if(roleRepo.findForUser(user).stream().anyMatch(role->role.getName().equals("ROLE_ADM"))) {
-			return new ResponseEntity<Object>("Vous ne pouvez pas désactiver un compte administrateur !", HttpStatus.BAD_REQUEST);
-		}
+		if(roleRepo.findForUser(user).stream().anyMatch(role->role.getName().equals("ROLE_ADM"))) 
+			return new ResponseEntity<Object>("Vous ne pouvez pas modifier un compte administrateur !", HttpStatus.BAD_REQUEST);
 		
 		try {
 			//Save the user
