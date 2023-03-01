@@ -1,27 +1,16 @@
 package be.chrverviers.stockmanager.Services;
 
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
-
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.RoleRepository;
 import be.chrverviers.stockmanager.Repositories.UserRepository;
@@ -39,12 +28,11 @@ public class CustomUserDetailsService implements UserDetailsService{
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    	// 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found with username or email: "+ username));
         user.setRoles(roleRepository.findForUser(user));
-
+        
         return user;
     }
     

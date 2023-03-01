@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
 import be.chrverviers.stockmanager.Services.JwtService;
+import be.chrverviers.stockmanager.Services.Exceptions.UserDisabledException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -59,6 +60,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 			//We check that the username exist in the token, and that there is no ongoing connection
 			if(username !=null&& SecurityContextHolder.getContext().getAuthentication()==null) {
 				UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+		        if(!userDetails.isEnabled())
+		        	throw new UserDisabledException("Vos droits d'accès ont été révoqués. Si vous pensez que c'est une erreur, contactez un administrateur.");
+		        
 				if(jwtService.isTokenValid(jwt, userDetails)) {
 					UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
 							userDetails, userDetails.getPassword(), userDetails.getAuthorities());
@@ -68,16 +72,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 					SecurityContextHolder.getContext().setAuthentication(authToken);
 				}
 			}
+			
 			filterChain.doFilter(request, response);
 		} catch(JwtException e) {
 			this.clearCookies(response);
-			response.sendError(401);
+			response.sendError(401, e.getMessage());
 		} catch(IllegalArgumentException e) {
 			this.clearCookies(response);
-			response.sendError(401);
+			response.sendError(401, e.getMessage());
 		} catch(UsernameNotFoundException e) {
 			this.clearCookies(response);
-			response.sendError(401);
+			response.sendError(401, e.getMessage());
+		} catch (UserDisabledException e) {
+			this.clearCookies(response);
+			response.sendError(401, e.getMessage());
 		}
 	}
 	

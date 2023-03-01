@@ -1,14 +1,11 @@
 package be.chrverviers.stockmanager.Repositories;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-
 import be.chrverviers.stockmanager.Domain.Models.Role;
 import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -33,14 +30,14 @@ public class RoleRepository implements IRepository<Role> {
 	}
 	
 	public List<Role> findForUserId(int id){
-		String query = "SELECT r.* FROM CCLIB.ROLE r JOIN CCLIB.USER_ROLE ur ON ur.ROLE_ID = r.ID JOIN CCLIB.USER u ON ur.USER_ID = u.ID WHERE u.id = ?";
+		String query = "SELECT r.* FROM CCLIB.ROLE r LEFT JOIN CCLIB.USER_ROLE ur ON ur.ROLE_ID = r.ID LEFT JOIN CCLIB.USER u ON ur.USER_ID = u.ID WHERE u.id = ?";
 		return template.query(query, rowMapper, id);
 	}
 	
 	@Override
 	public List<Role> findAll() {
-		// TODO Module de remplacement de méthode auto-généré
-		return null;
+		String query = "SELECT * FROM CCLIB.ROLE";
+		return template.query(query, rowMapper);
 	}
 
 	@Override

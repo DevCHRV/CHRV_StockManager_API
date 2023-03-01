@@ -66,26 +66,9 @@ public class ItemController {
 			return new ResponseEntity<Object>("Cet item n'existe pas !", HttpStatus.BAD_REQUEST);
 		//Get and set it's licences
 		item.setLicence(licenceRepo.findForItem(item));
+		item.setInterventions(interventionRepo.findForItem(item));
 		return new ResponseEntity<Object>(item, HttpStatus.OK);
 	}
-	
-	/**
-	 * Simple GET method
-	 * Not really a REST method but... I thought loading all the interventions in the front-end and then only filtering the one that
-	 * Match the item's id would be a shame, so this method came into being
-	 * 
-	 * @param id the id of the item for which you wish to get the interventions
-	 * @return the interventions concerning the item or an error message
-	 */
-	@PreAuthorize("hasRole('TEC')")
-	@GetMapping(value = "/{id}/intervention")
-	public @ResponseBody ResponseEntity<Object> getInterventionForId(@PathVariable("id") int id) {
-		Item i = itemRepo.findById(id).orElse(null);
-		if(i == null)
-			return new ResponseEntity<Object>("Cet item n'existe pas !", HttpStatus.BAD_REQUEST);
-		return new ResponseEntity<Object>(interventionRepo.findForItemId(id), HttpStatus.OK);
-	}
-	
 	
 	/**
 	 * Simple PUT method

@@ -130,6 +130,7 @@ public class OrderRepository implements IRepository<Order>{
 		user.setUsername(rs.getString(6));
 		user.setFirstname(rs.getString(7));
 		user.setLastname(rs.getString(8));
+		user.setIsActive(rs.getBoolean(9));
 		order.setUser(user);
 		return order;
 	};

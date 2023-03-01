@@ -199,6 +199,7 @@ public class LicenceRepository implements IRepository<Licence>{
 			user.setUsername(rs.getString(10));
 			user.setFirstname(rs.getString(11));
 			user.setLastname(rs.getString(12));
+			user.setIsActive(rs.getBoolean(13));
 		} catch (SQLException e) {
 			return null;
 		}
@@ -208,21 +209,21 @@ public class LicenceRepository implements IRepository<Licence>{
 	private Item mapItem(ResultSet rs, int rowNum) {
 		Item item = new Item();
 		try {
-			item.setId(rs.getInt(13));
-			item.setReference(rs.getString(14));
-			item.setSerial_number(rs.getString(15));
-			item.setDescription(rs.getString(16));
-			item.setPurchased_at(rs.getDate(17));
-			item.setReceived_at(rs.getDate(18));
-			item.setWarranty_expires_at(rs.getDate(19));
-			item.setPrice(rs.getDouble(20));
-			item.setIs_available(rs.getBoolean(21));
-			item.setIs_placed(rs.getBoolean(22));
-			item.setUnit(rs.getString(23));
-			item.setRoom(rs.getString(24));
-			item.setLast_checkup_at(rs.getDate(25));
-			item.setCheckup_interval(rs.getInt(26));
-			item.setProvider(rs.getString(27));
+			item.setId(rs.getInt(14));
+			item.setReference(rs.getString(15));
+			item.setSerial_number(rs.getString(16));
+			item.setDescription(rs.getString(17));
+			item.setPurchased_at(rs.getDate(18));
+			item.setReceived_at(rs.getDate(19));
+			item.setWarranty_expires_at(rs.getDate(20));
+			item.setPrice(rs.getDouble(21));
+			item.setIs_available(rs.getBoolean(22));
+			item.setIs_placed(rs.getBoolean(23));
+			item.setUnit(rs.getString(24));
+			item.setRoom(rs.getString(25));
+			item.setLast_checkup_at(rs.getDate(26));
+			item.setCheckup_interval(rs.getInt(27));
+			item.setProvider(rs.getString(28));
 		} catch (SQLException e) {
 			return null;
 		}

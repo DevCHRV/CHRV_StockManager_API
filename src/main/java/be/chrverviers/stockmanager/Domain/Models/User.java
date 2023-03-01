@@ -17,13 +17,9 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.JoinColumn;
-
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.CascadeType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -53,6 +49,8 @@ public class User implements UserDetails {
 	@OneToMany(mappedBy="user",fetch=FetchType.LAZY)
 	@JsonIdentityReference(alwaysAsId=true)
 	private Set<Licence> licences;
+	
+	private boolean isActive;
 	
 	public User() {
 		super();
@@ -136,6 +134,7 @@ public class User implements UserDetails {
 		this.licences = licences;
 	} 
 
+	@JsonIgnore
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 	    List<GrantedAuthority> authorities
@@ -149,30 +148,33 @@ public class User implements UserDetails {
 	    return authorities;
 	}
 	
-	public void setAuthorizties() {
-		
+	public boolean getIsActive() {
+		return this.isActive;
 	}
 	
+	public void setIsActive(boolean is) {
+		this.isActive = is;
+	}
 
 	//Simple Override, we don't really need thos
 	@Override
 	public boolean isAccountNonExpired() {
-		return true;
+		return this.isActive;
 	}
 
 	@Override
 	public boolean isAccountNonLocked() {
-		return true;
+		return this.isActive;
 	}
 
 	@Override
 	public boolean isCredentialsNonExpired() {
-		return true;
+		return this.isActive;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return this.isActive;
 	}
 
 	@Override

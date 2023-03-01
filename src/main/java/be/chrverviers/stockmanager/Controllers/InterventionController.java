@@ -89,6 +89,7 @@ public class InterventionController {
 	public @ResponseBody ResponseEntity<List<Intervention>> get() {
 		return new ResponseEntity<List<Intervention>>(interventionRepo.findAll(), HttpStatus.OK);
 	}
+	
 	/**
 	 * Simple GET method
 	 * @param id the id of the intervention you're looking for
@@ -105,6 +106,7 @@ public class InterventionController {
 		intervention.setLicences(licenceRepo.findForIntervention(intervention));
 		return new ResponseEntity<Object>(intervention, HttpStatus.OK);
 	}
+	
 	/**
 	 * Simple PUT method to update the Intervention passed as parameter
 	 * @param id the id of the intervention you're looking to update

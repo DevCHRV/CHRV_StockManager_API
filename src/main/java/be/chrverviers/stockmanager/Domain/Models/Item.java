@@ -48,6 +48,11 @@ public class Item {
 	//and the next as id.
 	//Which is a pain because the front-end can't really know when it's going to receive an id or an object
 	private List<Licence> licence = Collections.emptyList();
+	
+	@OneToMany(fetch=FetchType.LAZY, cascade=javax.persistence.CascadeType.ALL)
+	@JoinColumn(name="item_id")
+	@Cascade(CascadeType.ALL)
+	private List<Intervention> interventions = Collections.emptyList();
 
 	private boolean is_available;
 	
@@ -197,13 +202,13 @@ public class Item {
 		this.is_placed = is_placed;
 	}
 	
-//	public Order getOrder() {
-//		return this.order;
-//	}
-//	
-//	public void setOrder(Order order) {
-//		this.order = order;
-//	}
+	public void setInterventions(List<Intervention> interventions) {
+		this.interventions = interventions;
+	}
+	
+	public List<Intervention> getInterventions(){
+		return this.interventions;
+	}
 
 	@Override
 	public String toString() {

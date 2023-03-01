@@ -13,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +26,7 @@ import be.chrverviers.stockmanager.Repositories.RoleRepository;
 import be.chrverviers.stockmanager.Repositories.UserRepository;
 import be.chrverviers.stockmanager.Services.CustomUserDetailsService;
 import be.chrverviers.stockmanager.Services.JwtService;
+import be.chrverviers.stockmanager.Services.Exceptions.UserDisabledException;
 import io.jsonwebtoken.ExpiredJwtException;
 
 @RestController
@@ -58,6 +61,7 @@ public class AuthController {
 	        		);
 	        //If we arrive here, then it means that the User exists in the Active directory
 	        User user = userRepository.findByUsername(loginDto.getUsername()).orElse(null);
+	        
 	        //If it doesn't exist in the database yet, we try to add it first
 	        if(user==null) {
 	        	//This method will build and save a new user with infomations obtained by querying the Active directory
@@ -65,6 +69,10 @@ public class AuthController {
 	        	//Now we try to get it from the DB again, if it doesn't exist then it means something went wrong with the User creation
 	        	user = userRepository.findByUsername(loginDto.getUsername()).orElseThrow(()->new UsernameNotFoundException("User not found !"));
 	        }
+	        
+	        if(!user.isEnabled())
+	        	throw new UserDisabledException();
+	        
 	        user.setRoles(roleRepository.findForUser(user));
 	        //If the user is found, we create and return the token
 	        String token = jwtService.generateToken(user);
@@ -74,6 +82,7 @@ public class AuthController {
     	        cookie.setHttpOnly(true);
     	        cookie.setPath("/");
     	        cookie.setMaxAge(1 * 60 * 60 * 24);
+    	        
 	        request.addCookie(cookie);
 	        
 	        return new ResponseEntity<Object>(user, HttpStatus.OK);
@@ -82,7 +91,10 @@ public class AuthController {
 		} catch(UsernameNotFoundException e) {
 			//This error is thrown when we fail to add the user to the application's database
 	        return new ResponseEntity<>("Une erreur s'est produite lors de l'ajout de l'utilisateur à la BD.", HttpStatus.BAD_REQUEST);
-		} catch(AuthenticationException e) {
+		} catch (UserDisabledException e) {
+	        return new ResponseEntity<>("Vos droits d'accès ont été révoqués. Si vous pensez que c'est une erreur, contactez un administrateur.", HttpStatus.BAD_REQUEST);
+		}
+		catch(AuthenticationException e) {
 			//This error is thrown when the Active Directory denies the connection for the given credentials
 			//It means that either the credentials are wrong or the user isn't member of the OU=Informatique
 	        return new ResponseEntity<>("Cet utilisateur n'existe pas ou n'est pas autorisé !", HttpStatus.BAD_REQUEST);
@@ -98,5 +110,20 @@ public class AuthController {
 	        cookie.setMaxAge(0);
         request.addCookie(cookie);
         return new ResponseEntity<Object>(HttpStatus.OK);
+	}
+	
+	/**
+	 * Simple GET method
+	 * This method should only be called by the front-end to refresh it's local value of the current user
+	 * @return the currently logged user
+	 */
+	@GetMapping("current") ResponseEntity<Object> current() {
+		User u = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		User user = userRepository.findById(u.getId()).orElse(null);
+		if(u==null || user == null) {
+			return new ResponseEntity<Object>("Aucun utilisateur n'est connecté !", HttpStatus.UNAUTHORIZED);
+		}
+		user.setRoles(roleRepository.findForUser(user));
+		return new ResponseEntity<Object>(user, HttpStatus.OK);
 	}
 }
