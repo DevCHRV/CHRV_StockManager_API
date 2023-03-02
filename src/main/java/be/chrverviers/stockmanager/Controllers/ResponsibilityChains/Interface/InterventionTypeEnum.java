@@ -12,7 +12,8 @@ public enum InterventionTypeEnum {
 	RETURN(4),
 	DEPANNAGE(5),
 	INSTALLATION_LICENCE(6),
-	DESINSTALLATION_LICENCE(7);
+	DESINSTALLATION_LICENCE(7),
+	MAINTENANCE(8);
 			
 	public int value;
 	

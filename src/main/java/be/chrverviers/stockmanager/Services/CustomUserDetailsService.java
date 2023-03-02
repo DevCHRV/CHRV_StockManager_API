@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import be.chrverviers.stockmanager.Domain.Models.Role;
 import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.RoleRepository;
 import be.chrverviers.stockmanager.Repositories.UserRepository;
@@ -44,21 +46,26 @@ public class CustomUserDetailsService implements UserDetailsService{
      * @return
      */
     public int buildUser(String username) {
+    	final int TEC_ROLE_ID = 3;
     	//Create a query to the LDAP Server
     	LdapQuery query = query()
     			.base("OU=Informatique,OU=Administratifs,OU=Chrv_Users,DC=chplt,DC=be")
-    	        .attributes("sn","givenname")
+    	        .attributes("sn","givenname","mail")
     	        .where("objectClass").is("person").and("objectCategory").is("User")
     	        .and("sAMAccountName").is(username);
     	//Create a Mapper that will return a new User from the query
 		AttributesMapper<User> mapper = new AttributesMapper<User>() {
 	           public User mapFromAttributes(Attributes attrs) throws NamingException {
-	        	   return new User(username.toUpperCase(), (String) attrs.get("sn").get(),(String) attrs.get("givenname").get());
+	        	   return new User(username.toUpperCase(), (String) attrs.get("sn").get(),(String) attrs.get("givenname").get(), (String) attrs.get("mail").get());
 	           }
 	         };
 	    //For some reason .search can only return a list so...
     	List<User> list = ldapTemplate.search(query, mapper);
-    	//Here we save an return the new user
-    	return userRepository.create(list.get(0));
+    	//Here we create the new user
+    	User user = list.get(0);
+    	user.setId(userRepository.create(list.get(0)));
+    	//We give him the role TEC
+    	userRepository.attach(new Role(TEC_ROLE_ID), user.getId());
+    	return user.getId();
     }
 }

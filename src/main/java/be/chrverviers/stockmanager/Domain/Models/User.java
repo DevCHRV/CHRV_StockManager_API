@@ -37,6 +37,7 @@ public class User implements UserDetails {
 	
 	private String firstname;
 	private String lastname;
+	private String email;
 	
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name="users_roles",
@@ -66,6 +67,14 @@ public class User implements UserDetails {
 		this.username = username;
 		this.firstname = firstname;
 		this.lastname = lastname;
+	}
+	
+	public User(String username, String firstname, String lastname, String email) {
+		super();
+		this.username = username;
+		this.firstname = firstname;
+		this.lastname = lastname;
+		this.email = email;
 	}
 
 	public User(String username, String firstname, String lastname, List<Role> roles) {
@@ -116,6 +125,14 @@ public class User implements UserDetails {
 
 	public void setLastname(String lastname) {
 		this.lastname = lastname;
+	}
+	
+	public String getEmail() {
+		return this.email;
+	}
+	
+	public void setEmail(String email) {
+		this.email = email;
 	}
 	
 	public List<Role> getRoles() {
@@ -179,7 +196,7 @@ public class User implements UserDetails {
 
 	@Override
 	public String toString() {
-		return "User [id=" + id + ", username=" + username + ", roles=" + roles + "]";
+		return "User {ID=" + id + ", USERNAME=" + username + "}";
 	}
 
 	@Override

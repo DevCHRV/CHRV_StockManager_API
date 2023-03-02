@@ -5,6 +5,8 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +36,9 @@ public class UserController {
 	
 	@Autowired
 	RoleRepository roleRepo;
+	
+    private Logger logger = LoggerFactory.getLogger(UserController.class);
+    
 	/**
 	 * Simple GET method
 	 * @return all the users
@@ -69,11 +74,16 @@ public class UserController {
 	@PreAuthorize("hasRole('ADM')")
 	@PutMapping(value="/{id}")
 	public @ResponseBody ResponseEntity<Object> update(@PathVariable("id") int id, @RequestBody User user, HttpServletRequest request){
-		if(id!=user.getId())
+		logger.info(String.format("User '%s' is updating User with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+		if(id!=user.getId()) {
+			logger.warn(String.format("User '%s' did not have the required authority to update User with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return new ResponseEntity<Object>("Cet utilisateur n'existe pas !", HttpStatus.BAD_REQUEST);
+		}
 				
-		if(roleRepo.findForUser(user).stream().anyMatch(role->role.getName().equals("ROLE_ADM"))) 
+		if(roleRepo.findForUser(user).stream().anyMatch(role->role.getName().equals("ROLE_ADM"))) {
+			logger.warn(String.format("User '%s' cannot update administrator User with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return new ResponseEntity<Object>("Vous ne pouvez pas modifier un compte administrateur !", HttpStatus.BAD_REQUEST);
+		}
 		
 		try {
 			//Save the user
@@ -82,8 +92,12 @@ public class UserController {
 			userRepo.detachAllRoles(user);
 			//Attach the new ones
 			userRepo.attachAll(user.getRoles(), user);
+			
+			logger.info(String.format("User '%s' has successfully updated User with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+
 			return new ResponseEntity<Object>(userRepo.findById(user.getId()), HttpStatus.OK);
 		} catch(Exception e) {
+			logger.error(String.format("User '%s' is failed to update User with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return new ResponseEntity<Object>("La modification à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}	

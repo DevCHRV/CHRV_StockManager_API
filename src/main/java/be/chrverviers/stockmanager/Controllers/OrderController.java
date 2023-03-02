@@ -3,6 +3,9 @@ package be.chrverviers.stockmanager.Controllers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +47,8 @@ public class OrderController {
 	@Autowired
 	TypeRepository typeRepo;
 	
+    private Logger logger = LoggerFactory.getLogger(OrderController.class);
+	
 	/**
 	 * Simple GET method
 	 * @return all the orders
@@ -81,6 +86,7 @@ public class OrderController {
 	 */
 	@PutMapping(value="/{id}")
 	public @ResponseBody ResponseEntity<Object> update(@PathVariable("id") int id, @RequestBody OrderDTO request){
+		logger.info(String.format("User '%s' is updating Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 		if(request.getId() != id)
 			return new ResponseEntity<Object>("Cette commande n'existe pas !", HttpStatus.BAD_REQUEST);
 		//We try to transform the DTO into an Order object so that it can't be used as an order by the rest of the api
@@ -96,8 +102,10 @@ public class OrderController {
 			itemRepo.receiveForOrder(order);
 			//As we are working with a DTO that isn't complete, we're sending back the completely rebuilt object
 			//To avoid problems
+			logger.info(String.format("User '%s' has successfully updated Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return this.getById(order.getId());
 		} catch(Exception e) {
+			logger.error(String.format("User '%s' has failed to update Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return new ResponseEntity<Object>("La réception à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -111,6 +119,7 @@ public class OrderController {
 	 */
   	@PostMapping(value = "/")
 	public @ResponseBody Object save(@RequestBody OrderDTO request) {
+		logger.info(String.format("User '%s' is creating a new Order", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 		try {
 			//We try to transform the DTO into an Order object so that it can't be used as an order by the rest of the api
 			Order order = request.toOrder();
@@ -121,20 +130,27 @@ public class OrderController {
 			//We save the order
 			order.setId(orderRepo.create(order));
 			//We create an item instance for each item of the order and we attach them to the order
-			orderRepo.attachAllItemId(order, itemRepo.createAll(order.getItems()));
+			try {
+				orderRepo.attachAllItemId(order, itemRepo.createAll(order.getItems()));
+			} catch(Exception e) {
+				logger.error(String.format("User '%s' has failed to create a new Order with id:'%s'. The Order was created but there was an error during the related Items creation", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), order.getId()));
+				return new ResponseEntity<String>("La création du matériel lié à échoué !", HttpStatus.BAD_REQUEST);
+			}
 			//We build the map that contains the type and the related quantity as key and value
 			Map<Type, Integer> map = new HashMap<Type, Integer>();
 			for(Item item: order.getItems()) {
 				if(map.containsKey(item.getType())){
 					map.merge(item.getType(), 1, Integer::sum);
-				}else {
+				} else {
 					map.put(item.getType(), 1);
 				}
 			}
 			//We attach all the types and quantity to the order
 			orderRepo.attachAll(order, map);
+			logger.info(String.format("User '%s' has successfully created a new Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), order.getId()));
 			return new ResponseEntity<Integer>(order.getId(), HttpStatus.OK);
 		} catch(Exception e) {
+			logger.error(String.format("User '%s' has failed to create a new Order", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<String>("La création à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}

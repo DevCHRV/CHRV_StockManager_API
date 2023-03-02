@@ -2,6 +2,8 @@ package be.chrverviers.stockmanager.Controllers;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementati
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.LicenceDesinstallationInterventionHandler;
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.LicenceInstallationInterventionHandler;
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.LoanInterventionHandler;
+import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.MaintenanceInterventionHandler;
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementations.ReturnInterventionHandler;
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.ResponsibilityChain;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
@@ -36,6 +39,8 @@ import be.chrverviers.stockmanager.Repositories.LicenceRepository;
 @RestController
 @RequestMapping(value = "api/intervention", produces="application/json")
 public class InterventionController {
+	
+    private Logger logger = LoggerFactory.getLogger(InterventionController.class);
 	
 	private ResponsibilityChain<Intervention> chain;
 	
@@ -57,7 +62,8 @@ public class InterventionController {
 			@Autowired LoanInterventionHandler loanInterventionHandler,
 			@Autowired ReturnInterventionHandler returnInterventionHandler,
 			@Autowired LicenceInstallationInterventionHandler licenceInstallationInterventionHandler,
-			@Autowired LicenceDesinstallationInterventionHandler licenceDesinstallationInterventionHandler
+			@Autowired LicenceDesinstallationInterventionHandler licenceDesinstallationInterventionHandler,
+			@Autowired MaintenanceInterventionHandler maintenanceInterventionHandler
 			) {
 		this.chain = 
 				installationInterventionHandler.build(
@@ -65,7 +71,9 @@ public class InterventionController {
 				loanInterventionHandler, 
 				returnInterventionHandler,
 				licenceInstallationInterventionHandler,
-				licenceDesinstallationInterventionHandler);
+				licenceDesinstallationInterventionHandler,
+				maintenanceInterventionHandler
+				);
 	}
 	
 	@Autowired
@@ -116,12 +124,15 @@ public class InterventionController {
 	@PreAuthorize("hasRole('TEC')")
 	@PutMapping(value="/{id}")
 	public @ResponseBody ResponseEntity<Object> update(@PathVariable("id") int id, @RequestBody Intervention intervention){
+		logger.info(String.format("User '%s' is updating Intervention with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 		if(id!=intervention.getId())
 			return new ResponseEntity<Object>("Cette intervention n'existe pas !", HttpStatus.BAD_REQUEST);
 		try {
 			interventionRepo.save(intervention, id);
+			logger.info(String.format("User '%s' has succesfully updated Intervention with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return new ResponseEntity<Object>(interventionRepo.findById(intervention.getId()), HttpStatus.OK);
 		} catch(Exception e) {
+			logger.error(String.format("User '%s' failed to update Intervention with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return new ResponseEntity<Object>("La modification à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -135,20 +146,26 @@ public class InterventionController {
 	@PreAuthorize("hasRole('TEC')")
 	@PostMapping(value = "/")
 	public @ResponseBody Object save(@RequestBody Intervention intervention) {
+		logger.info(String.format("User '%s' is creating a new Intervention", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 		//Simple checks for data validity
 		if(intervention.getDescription()==null) {
+			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request: bad 'description'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("La description ne peut pas etre vide !", HttpStatus.BAD_REQUEST);
 		}
 		if(intervention.getType()==null) {
+			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request: bad 'type'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("Le type ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
 		if(intervention.getItem()==null) {
+			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request: bad 'item'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("Le matériel ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
 		if(intervention.getUnit()==null || intervention.getUnit().equals("")) {
+			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request: bad 'unit'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("L'unité ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
 		if(intervention.getRoom()==null || intervention.getUnit().equals("")) {
+			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request: bad 'room'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("Le local ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
 		//Get the user from Spring's Security context
@@ -165,11 +182,14 @@ public class InterventionController {
 			//Linking the intervention to the user that requested it
 			interventionRepo.attach(intervention.getNotifier(), intervention);
 			//TODO: Create and save the automatic report
+			logger.info(String.format("User '%s' successfully created a new Intervention with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), intervention.getId()));
 			return new ResponseEntity<Intervention>(intervention, HttpStatus.OK);
 		} catch(IllegalStateException e) {
+			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 		catch(Exception e) {
+			logger.error(String.format("User '%s' failed to create a new Intervention", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<String>("La création à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}

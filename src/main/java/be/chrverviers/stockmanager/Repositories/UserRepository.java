@@ -32,6 +32,7 @@ public class UserRepository implements IRepository<User>{
 		user.setFirstname(rs.getString("FIRSTNAME"));
 		user.setLastname(rs.getString("LASTNAME"));
 		user.setIsActive(rs.getBoolean("IS_ACTIVE"));
+		user.setEmail(rs.getString("EMAIL"));
 		return user;
 	};
 	
@@ -85,13 +86,14 @@ public class UserRepository implements IRepository<User>{
 	public int create(User t) {
 		GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
 		
-		String query = "INSERT INTO CCLIB.USER (ID, USERNAME, FIRSTNAME, LASTNAME, IS_ACTIVE) VALUES (DEFAULT, ?, ?, ?, DEFAULT)";
+		String query = "INSERT INTO CCLIB.USER (ID, USERNAME, FIRSTNAME, LASTNAME, IS_ACTIVE, EMAIL) VALUES (DEFAULT, ?, ?, ?, DEFAULT, ?)";
 		
 		template.update(connection -> {
 			PreparedStatement ps =  connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 			ps.setString(1, t.getUsername());
 			ps.setString(2, t.getFirstname());
 			ps.setString(3, t.getLastname());
+			ps.setString(4, t.getEmail());
 			return ps;
 		}, keyHolder);		
 		

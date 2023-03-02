@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Role;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
+import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.InterventionRepository;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
 import be.chrverviers.stockmanager.Repositories.LicenceRepository;
@@ -41,6 +45,9 @@ public class ItemController {
 	
 	@Autowired
 	TypeRepository typeRepo;
+	
+    private Logger logger = LoggerFactory.getLogger(ItemController.class);
+
 	
 	/**
 	 * Simple GET method
@@ -78,8 +85,11 @@ public class ItemController {
 	@PreAuthorize("hasRole('PGM')")
 	@PutMapping(value="/{id}")
 	public @ResponseBody ResponseEntity<Object> update(@PathVariable("id") int id, @RequestBody Item item){
-		if(id!=item.getId())
+		logger.info(String.format("User '%s' is updating Item with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+		if(id!=item.getId()) {
+			logger.error(String.format("User '%s' has failed to update Item with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return new ResponseEntity<Object>("Cet item n'existe pas !", HttpStatus.BAD_REQUEST);
+		}
 		try {
 			//Save the item
 			itemRepo.save(item, id);
@@ -87,8 +97,12 @@ public class ItemController {
 			//We used to save the licences
 			//We could probably just use the new "attachAll" method but I don't want to break anything on a Friday
 			licenceRepo.saveAll(item.getLicence());
+			
+			logger.info(String.format("User '%s' has succesfully updated Item with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+
 			return new ResponseEntity<Object>(itemRepo.findById(item.getId()), HttpStatus.OK);
 		} catch(Exception e) {
+			logger.error(String.format("User '%s' has failed to update Item with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
 			return new ResponseEntity<Object>("La modification à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -101,22 +115,29 @@ public class ItemController {
 	@PreAuthorize("hasRole('PGM')")
 	@PostMapping(value = "/")
 	public @ResponseBody Object save(@RequestBody Item item) {
+		logger.info(String.format("User '%s' is creating a new Item", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 		if(item.getSerial_number()==null) {
+			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'serial_number'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("Le numéro de série ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
 		if(item.getReference()==null) {
+			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'reference'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("La référence ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
 		if(item.getDescription()==null) {
+			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'description'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("La description ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
 		if(item.getPurchased_at()==null) {
+			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'purchase date'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("La date d'achat ne peut pas être vide", HttpStatus.BAD_REQUEST);
 		}
 		if(item.getWarranty_expires_at()==null) {
+			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'warranty expiration date'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("La date d'expiration de la garantie ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
 		if(item.getType()==null) {
+			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'type'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("Le type ne peut pas être vide", HttpStatus.BAD_REQUEST);
 		}
 		try {
@@ -128,8 +149,10 @@ public class ItemController {
 			}
 			//Save the licences
 			licenceRepo.saveAll(item.getLicence());
+			logger.info(String.format("User '%s' has successfully created a new Item with id:'%s''", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), item.getId()));
 			return new ResponseEntity<Object>(item, HttpStatus.OK);
 		} catch(Exception e) {
+			logger.error(String.format("User '%s' failed to create a new Item due to bad request", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<String>("La création à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}

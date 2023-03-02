@@ -24,6 +24,15 @@ public class Role {
     private int id;
 	private String name;
 	
+	public Role() {
+		super();
+	}
+	
+	public Role(int id) {
+		super();
+		this.id = id;
+	}
+	
 //    @ManyToMany(fetch=FetchType.LAZY, mappedBy = "roles")
 //	private Set<User> users;
 	
