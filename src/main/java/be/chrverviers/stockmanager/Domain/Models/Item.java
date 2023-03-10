@@ -16,6 +16,9 @@ import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 import org.springframework.data.relational.core.mapping.Table;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Item {
 
@@ -26,20 +29,21 @@ public class Item {
 	@ManyToOne(fetch=FetchType.EAGER)
 	@Cascade(CascadeType.DETACH)
 	private Type type;
-
-	
+	private String name;
 	private String reference;
-	private String serial_number;
+	private String serialNumber;
 	private String description;
 	private String provider;
-	private Date purchased_at = new Date();
-	private Date received_at = new Date();
-	private Date warranty_expires_at = new Date();
+	private Date purchasedAt = new Date();
+	private Date receivedAt = new Date();
+	private Date warrantyExpiresAt = new Date();
 	private double price;
-	private String unit;
-	private String room;
-	private Date last_checkup_at = new Date();
-	private int checkup_interval;
+	
+	@ManyToOne
+	private Room room;
+	
+	private Date lastCheckupAt = new Date();
+	private int checkupInterval;
 	
 	@OneToMany(fetch=FetchType.LAZY, cascade=javax.persistence.CascadeType.ALL)
 	@JoinColumn(name="item_id")
@@ -53,10 +57,15 @@ public class Item {
 	@JoinColumn(name="item_id")
 	@Cascade(CascadeType.ALL)
 	private List<Intervention> interventions = Collections.emptyList();
-
-	private boolean is_available;
 	
-	private boolean is_placed;
+	//For some reason Spring doesn't want to deserialize the Order class...
+	@JsonIgnore
+	@ManyToOne(optional=true, fetch=FetchType.LAZY)
+	private Order order;
+
+	private boolean isAvailable = true;
+	
+	private boolean isPlaced = false;
 	
 	public Item() {
 		super();
@@ -66,8 +75,22 @@ public class Item {
 		this.id=id;
 	}
 	
+	public Item(int id, String name) {
+		this.id=id;
+		this.name = name;
+	}
+	
 	public Type getType() {
 		return type;
+	}
+	
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public int getId() {
@@ -90,12 +113,12 @@ public class Item {
 		this.reference = reference;
 	}
 
-	public String getSerial_number() {
-		return serial_number;
+	public String getSerialNumber() {
+		return serialNumber;
 	}
 
-	public void setSerial_number(String serial_number) {
-		this.serial_number = serial_number;
+	public void setSerialNumber(String serialNumber) {
+		this.serialNumber = serialNumber;
 	}
 
 	public String getDescription() {
@@ -114,28 +137,28 @@ public class Item {
 		this.provider = provider;
 	}
 
-	public Date getPurchased_at() {
-		return purchased_at;
+	public Date getPurchasedAt() {
+		return purchasedAt;
 	}
 
-	public void setPurchased_at(Date purchased_at) {
-		this.purchased_at = purchased_at;
+	public void setPurchasedAt(Date purchasedAt) {
+		this.purchasedAt = purchasedAt;
 	}
 
-	public Date getReceived_at() {
-		return received_at;
+	public Date getReceivedAt() {
+		return receivedAt;
 	}
 
-	public void setReceived_at(Date received_at) {
-		this.received_at = received_at;
+	public void setReceivedAt(Date receivedAt) {
+		this.receivedAt = receivedAt;
 	}
 
-	public Date getWarranty_expires_at() {
-		return warranty_expires_at;
+	public Date getWarrantyExpiresAt() {
+		return warrantyExpiresAt;
 	}
 
-	public void setWarranty_expires_at(Date warranty_expires_at) {
-		this.warranty_expires_at = warranty_expires_at;
+	public void setWarrantyExpiresAt(Date warrantyExpiresAt) {
+		this.warrantyExpiresAt = warrantyExpiresAt;
 	}
 
 	public double getPrice() {
@@ -146,36 +169,28 @@ public class Item {
 		this.price = price;
 	}
 
-	public String getUnit() {
-		return unit;
-	}
-
-	public void setUnit(String unit) {
-		this.unit = unit;
-	}
-
-	public String getRoom() {
+	public Room getRoom() {
 		return room;
 	}
 
-	public void setRoom(String room) {
+	public void setRoom(Room room) {
 		this.room = room;
 	}
 
-	public Date getLast_checkup_at() {
-		return last_checkup_at;
+	public Date getLastCheckupAt() {
+		return lastCheckupAt;
 	}
 
-	public void setLast_checkup_at(Date last_checkup_at) {
-		this.last_checkup_at = last_checkup_at;
+	public void setLastCheckupAt(Date lastCheckupAt) {
+		this.lastCheckupAt = lastCheckupAt;
 	}
 
-	public int getCheckup_interval() {
-		return checkup_interval;
+	public int getCheckupInterval() {
+		return checkupInterval;
 	}
 
-	public void setCheckup_interval(int checkup_interval) {
-		this.checkup_interval = checkup_interval;
+	public void setCheckupInterval(int checkupInterval) {
+		this.checkupInterval = checkupInterval;
 	}
 
 	public List<Licence> getLicence() {
@@ -186,24 +201,32 @@ public class Item {
 		this.licence = licence;
 	}
 
-	public boolean getIs_available() {
-		return is_available;
+	public boolean getIsAvailable() {
+		return isAvailable;
 	}
 
-	public void setIs_available(boolean is_available) {
-		this.is_available = is_available;
+	public void setIsAvailable(boolean isAvailable) {
+		this.isAvailable = isAvailable;
 	}
 
-	public boolean getIs_placed() {
-		return is_placed;
+	public boolean getIsPlaced() {
+		return isPlaced;
 	}
 
-	public void setIs_placed(boolean is_placed) {
-		this.is_placed = is_placed;
+	public void setIsPlaced(boolean isPlaced) {
+		this.isPlaced = isPlaced;
 	}
 	
 	public void setInterventions(List<Intervention> interventions) {
 		this.interventions = interventions;
+	}
+	
+	public Order getOrder() {
+		return this.order;
+	}
+	
+	public void setOrder(Order order) {
+		this.order = order;
 	}
 	
 	public List<Intervention> getInterventions(){
@@ -212,7 +235,28 @@ public class Item {
 
 	@Override
 	public String toString() {
-		return String.format("ITEM {ID:%s, SN:%s, REF: %s, DESC:%s, TYPE:%s, LICENCES:%s }", this.id, this.serial_number, this.reference, this.description, this.type.getName()+this.type.getId(), this.licence);
+		return String.format("ITEM [ID=%s, SN=%s, REF=%s, DESC=%s, TYPE=%s, LICENCES=%s ]", this.id, this.serialNumber, this.reference, this.description, this.type.getName()+this.type.getId(), this.licence);
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + id;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Item other = (Item) obj;
+		if (id != other.id)
+			return false;
+		return true;
+	}
 }

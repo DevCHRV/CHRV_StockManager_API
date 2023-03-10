@@ -11,6 +11,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,14 +31,18 @@ import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementati
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.ResponsibilityChain;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.Item;
+import be.chrverviers.stockmanager.Domain.Models.Licence;
 import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.InterventionRepository;
 import be.chrverviers.stockmanager.Repositories.InterventionTypeRepository;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
 import be.chrverviers.stockmanager.Repositories.LicenceRepository;
+import be.chrverviers.stockmanager.Repositories.UserRepository;
+import be.chrverviers.stockmanager.Services.EmailService;
 
 @RestController
 @RequestMapping(value = "api/intervention", produces="application/json")
+@Transactional
 public class InterventionController {
 	
     private Logger logger = LoggerFactory.getLogger(InterventionController.class);
@@ -87,6 +92,12 @@ public class InterventionController {
 	
 	@Autowired
 	ItemRepository itemRepo;
+	
+	@Autowired
+	UserRepository userRepo;
+	
+	@Autowired
+	EmailService emailService;
 	
 	/**
 	 * Simple GET method 
@@ -160,11 +171,8 @@ public class InterventionController {
 			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request: bad 'item'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("Le matériel ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
-		if(intervention.getUnit()==null || intervention.getUnit().equals("")) {
-			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request: bad 'unit'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
-			return new ResponseEntity<Object>("L'unité ne peut pas être vide !", HttpStatus.BAD_REQUEST);
-		}
-		if(intervention.getRoom()==null || intervention.getUnit().equals("")) {
+
+		if(intervention.getRoom()==null || intervention.getRoom().getUnit() == null) {
 			logger.info(String.format("User '%s' failed to create a new Intervention due to bad request: bad 'room'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("Le local ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
@@ -173,6 +181,43 @@ public class InterventionController {
 		//Linking the intervention and the user that made it
 		intervention.setUser(u);
 		try {
+			//Fetching the notifier (coming from the LDAP), if it doesn't exists we will need to create it
+			//If they do, then we replace the user with the value from the database (so that it has the good id)
+			User notifier = intervention.getNotifier();
+			if(notifier != null) {
+				User tmpNotifier = userRepo.findByUsername(notifier.getUsername()).orElse(null);
+				if(tmpNotifier==null) {
+					try {
+						notifier.setId(userRepo.create(notifier));
+					}catch(Exception e) {
+						logger.error(String.format("User '%s' failed to create a new Intervention. The selected notifier's creation failed.", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
+						return new ResponseEntity<String>("Impossible d'ajouter ce demandeur.", HttpStatus.BAD_REQUEST);
+					}
+				}
+				else {
+					intervention.setNotifier(tmpNotifier);
+				}
+			}
+			//As we allow the user to select user's that don't always exist in the database we need to check if they exist or not
+			//If they don't, we create them
+			//If they do, then we replace the user with the value from the database (so that it has the good id)
+			for(Licence l : intervention.getLicences()) {
+				User user = l.getUser();
+				if(user!=null) {
+					User tmp = userRepo.findByUsername(user.getUsername()).orElse(null);
+					if(tmp == null) {
+						try {
+							user.setId(userRepo.create(tmp));
+						}catch(Exception e) {
+							logger.error(String.format("User '%s' failed to create a new Intervention. The licence's user's creation failed.", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
+							return new ResponseEntity<String>("Impossible d'ajouter cet utilisateur.", HttpStatus.BAD_REQUEST);
+						}
+					} else {
+						l.setUser(tmp);
+					}
+				}
+			}
+			
 			//Try to create the intervention
 			intervention.setId(interventionRepo.create(intervention));
 			//Updating the related item according to the responsibility chain
@@ -191,6 +236,28 @@ public class InterventionController {
 		catch(Exception e) {
 			logger.error(String.format("User '%s' failed to create a new Intervention", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<String>("La création à échoué !", HttpStatus.BAD_REQUEST);
+		}
+	}
+	
+	/**
+	 * Simple PUT method, not a REST method but... anyway, this will force send a mail to the helpline to generated a ticket number
+	 * @param id the id of the intervention you're looking to update
+	 * @param intervention the new value of the intervention you're looking to update
+	 * @return the updated Intervention or an error message
+	 */
+	@PreAuthorize("hasRole('TEC')")
+	@PutMapping(value="/{id}/ticket")
+	public Object generateTicket(@PathVariable("id") int id, @RequestBody Intervention intervention) {
+		logger.info(String.format("User '%s' is manually sending ticket generation mail for Intervention with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+		if(id!=intervention.getId())
+			return new ResponseEntity<Object>("Cette intervention n'existe pas !", HttpStatus.BAD_REQUEST);
+		try {
+			emailService.sendMail(interventionRepo.findById(id).orElse(null), true);
+			logger.info(String.format("User '%s' has succesfully sent a ticket generation mail to the helpline for Intervention with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+			return new ResponseEntity<Object>(HttpStatus.OK);
+		} catch(Exception e) {
+			logger.error(String.format("User '%s' failed to send a ticket generation mail for Intervention with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+			return new ResponseEntity<Object>("L'envoi à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}
 	

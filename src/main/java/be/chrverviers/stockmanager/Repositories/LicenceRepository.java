@@ -24,6 +24,8 @@ import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
 import be.chrverviers.stockmanager.Domain.Models.LicenceType;
+import be.chrverviers.stockmanager.Domain.Models.Room;
+import be.chrverviers.stockmanager.Domain.Models.Unit;
 import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;
 
@@ -43,11 +45,14 @@ public class LicenceRepository implements IRepository<Licence>{
 		licence.setId(rs.getInt(1));
 		licence.setDescription(rs.getString(2));
 		licence.setValue(rs.getString(3));
+		licence.setReference(rs.getString(7));
+		licence.setPurchasedAt(rs.getDate(8));
 		Item item = rs.getInt(6)==0?null:new Item(rs.getInt(6));
 		licence.setItem(item);
 		LicenceType type = new LicenceType();
-		type.setId(rs.getInt(7));
-		type.setName(rs.getString(8));
+		type.setId(rs.getInt(9));
+		type.setName(rs.getString(10));
+		type.setAlias(rs.getString(11));
 		licence.setType(type);
 		return licence;
 	};
@@ -57,11 +62,14 @@ public class LicenceRepository implements IRepository<Licence>{
 		licence.setId(rs.getInt(1));
 		licence.setDescription(rs.getString(2));
 		licence.setValue(rs.getString(3));
+		licence.setReference(rs.getString(7));
+		licence.setPurchasedAt(rs.getDate(8));
 		Item item = rs.getInt(6)==0?null:new Item(rs.getInt(6));
 		licence.setItem(item);
 		LicenceType type = new LicenceType();
-		type.setId(rs.getInt(7));
-		type.setName(rs.getString(8));
+		type.setId(rs.getInt(9));
+		type.setName(rs.getString(10));
+		type.setAlias(rs.getString(11));
 		licence.setType(type);
 		User user = mapUser(rs,rowNum);
 		licence.setUser(user);
@@ -73,14 +81,19 @@ public class LicenceRepository implements IRepository<Licence>{
 		licence.setId(rs.getInt(1));
 		licence.setDescription(rs.getString(2));
 		licence.setValue(rs.getString(3));
+		licence.setReference(rs.getString(7));
+		licence.setPurchasedAt(rs.getDate(8));
 		LicenceType type = new LicenceType();
-		type.setId(rs.getInt(7));
-		type.setName(rs.getString(8));
+		type.setId(rs.getInt(9));
+		type.setName(rs.getString(10));
+		type.setAlias(rs.getString(11));
 		licence.setType(type);
 		User user = mapUser(rs,rowNum);
 		licence.setUser(user);
 		Item item = mapItem(rs, rowNum);
 		licence.setItem(item);
+		Room room = mapRoom(rs, rowNum);
+		item.setRoom(room);
 		return licence;
 	};
 	
@@ -92,18 +105,19 @@ public class LicenceRepository implements IRepository<Licence>{
 
 	@Override
 	public Optional<Licence> findById(int id) {
-		String query = "SELECT * FROM CCLIB.LICENCE l JOIN CCLIB.LICENCE_TYPE t ON l.TYPE_ID = t.ID LEFT JOIN CCLIB.USER u on l.USER_ID = u.ID LEFT JOIN CCLIB.ITEM i on l.ITEM_ID = i.ID WHERE l.ID = ?";
+		String query = "SELECT * FROM CCLIB.LICENCE l JOIN CCLIB.LICENCE_TYPE t ON l.TYPE_ID = t.ID LEFT JOIN CCLIB.USER u on l.USER_ID = u.ID LEFT JOIN CCLIB.ITEM i on l.ITEM_ID = i.ID LEFT JOIN ROOM r ON i.ROOM_ID = r.ID LEFT JOIN UNIT un ON r.UNIT_ID = un.ID WHERE l.ID = ?";
 		Licence licence = new Licence();
 		try { 
 			licence = template.queryForObject(query, withUserAndItemRowMapper, id);
 		} catch(DataAccessException e) {
+			e.getMessage();
 			//This means that there is no data, but we don't do anything because in this case we return an Optional
 		}
 		return Optional.ofNullable(licence);
 	}
 	
 	public List<Licence> findForItem(Item item){
-		String query = "SELECT * FROM CCLIB.LICENCE l JOIN CCLIB.LICENCE_TYPE t ON l.TYPE_ID = t.ID LEFT JOIN CCLIB.USER u on l.USER_ID = u.ID LEFT JOIN CCLIB.ITEM i on l.ITEM_ID = i.ID WHERE l.ITEM_ID = ?";
+		String query = "SELECT * FROM CCLIB.LICENCE l JOIN CCLIB.LICENCE_TYPE t ON l.TYPE_ID = t.ID LEFT JOIN CCLIB.USER u on l.USER_ID = u.ID LEFT JOIN CCLIB.ITEM i on l.ITEM_ID = i.ID LEFT JOIN ROOM r ON i.ROOM_ID = r.ID LEFT JOIN UNIT un ON r.UNIT_ID = un.ID WHERE l.ITEM_ID = ?";
 		List<Licence> licences = new ArrayList<Licence>();
 		try { 
 			licences = template.query(query, withUserAndItemRowMapper, item.getId());
@@ -131,12 +145,14 @@ public class LicenceRepository implements IRepository<Licence>{
 		
 		GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
 
-		String query = "INSERT INTO CCLIB.LICENCE (ID, DESCRIPTION, VALUE, TYPE_ID) VALUES (DEFAULT, ?, ?, ?)";
+		String query = "INSERT INTO CCLIB.LICENCE (ID, DESCRIPTION, VALUE, TYPE_ID, REFERENCE, PURCHASED_AT) VALUES (DEFAULT, ?, ?, ?, ?, ?)";
 		template.update(connection -> {
 			PreparedStatement ps =  connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 			ps.setString(1, t.getDescription());
 			ps.setString(2, t.getValue());
 			ps.setInt(3, t.getType().getId());
+			ps.setString(4, t.getReference());
+			ps.setDate(5, new Date(t.getPurchasedAt().getTime()));
 			return ps;
 		}, keyHolder);
 		return keyHolder.getKey().intValue();
@@ -192,15 +208,20 @@ public class LicenceRepository implements IRepository<Licence>{
 		return false;
 	}
 	
+	public int getCountForCurrentMonth() {
+		String query = "SELECT COUNT(*) FROM CCLIB.LICENCE WHERE MONTH(PURCHASED_AT) = MONTH(CURRENT_DATE) AND YEAR(PURCHASED_AT) = YEAR(CURRENT_DATE)";
+	    return template.queryForObject(query, intMapper);	
+	}
+	
 	private User mapUser(ResultSet rs, int rowNum) {
 		User user = new User();
 		try {
-			user.setId(rs.getInt(9));
-			user.setUsername(rs.getString(10));
-			user.setFirstname(rs.getString(11));
-			user.setLastname(rs.getString(12));
-			user.setIsActive(rs.getBoolean(13));
-			user.setEmail(rs.getString(14));
+			user.setId(rs.getInt(12));
+			user.setUsername(rs.getString(13));
+			user.setFirstname(rs.getString(14));
+			user.setLastname(rs.getString(15));
+			user.setIsActive(rs.getBoolean(16));
+			user.setEmail(rs.getString(17));
 		} catch (SQLException e) {
 			return null;
 		}
@@ -210,24 +231,44 @@ public class LicenceRepository implements IRepository<Licence>{
 	private Item mapItem(ResultSet rs, int rowNum) {
 		Item item = new Item();
 		try {
-			item.setId(rs.getInt(15));
-			item.setReference(rs.getString(16));
-			item.setSerial_number(rs.getString(17));
-			item.setDescription(rs.getString(18));
-			item.setPurchased_at(rs.getDate(19));
-			item.setReceived_at(rs.getDate(20));
-			item.setWarranty_expires_at(rs.getDate(21));
-			item.setPrice(rs.getDouble(22));
-			item.setIs_available(rs.getBoolean(23));
-			item.setIs_placed(rs.getBoolean(24));
-			item.setUnit(rs.getString(25));
-			item.setRoom(rs.getString(26));
-			item.setLast_checkup_at(rs.getDate(27));
-			item.setCheckup_interval(rs.getInt(28));
-			item.setProvider(rs.getString(29));
+			item.setId(rs.getInt(18));
+			item.setReference(rs.getString(19));
+			item.setSerialNumber(rs.getString(20));
+			item.setDescription(rs.getString(21));
+			item.setPurchasedAt(rs.getDate(22));
+			item.setReceivedAt(rs.getDate(23));
+			item.setWarrantyExpiresAt(rs.getDate(24));
+			item.setPrice(rs.getDouble(25));
+			item.setIsAvailable(rs.getBoolean(26));
+			item.setIsPlaced(rs.getBoolean(27));
+			item.setLastCheckupAt(rs.getDate(29));
+			item.setCheckupInterval(rs.getInt(30));
+			item.setProvider(rs.getString(31));
+		} catch (SQLException e) {
+			return new Item();
+		}
+		return item.getId()==0 ? new Item() : item;
+	}
+	
+	private Room mapRoom(ResultSet rs, int rowNum) {
+		Room room = new Room();
+		try {
+			room.setId(rs.getInt(35));
+			room.setName(rs.getString(36));
+			Unit unit = new Unit();
+			unit.setId(rs.getInt(38));
+			unit.setName(rs.getString(39));
+			room.setUnit(unit);		
 		} catch (SQLException e) {
 			return null;
 		}
-		return item.getId()==0 ? null : item;
+		return room;
+
+
 	}
+	
+	RowMapper<Integer> intMapper = (rs, rowNum) -> {
+		return rs.getInt(1);
+	};
+
 }

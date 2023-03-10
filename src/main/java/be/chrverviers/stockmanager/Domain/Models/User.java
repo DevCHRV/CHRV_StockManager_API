@@ -158,9 +158,6 @@ public class User implements UserDetails {
 	      = new ArrayList<>();
 	    for (Role role: this.roles) {
 	        authorities.add(new SimpleGrantedAuthority(role.getName()));
-	        role.getPrivileges().stream()
-	         .map(p -> new SimpleGrantedAuthority(p.getName()))
-	         .forEach(authorities::add);
 	    }
 	    return authorities;
 	}
@@ -196,7 +193,7 @@ public class User implements UserDetails {
 
 	@Override
 	public String toString() {
-		return "User {ID=" + id + ", USERNAME=" + username + "}";
+		return "User [ID=" + id + ", USERNAME=" + username + "]";
 	}
 
 	@Override

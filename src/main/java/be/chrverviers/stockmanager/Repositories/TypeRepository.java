@@ -54,7 +54,8 @@ public class TypeRepository implements IRepository<Type> {
 				type.setExpectedLifetime(rs.getInt(4));
 				type.setTotalQuantity(rs.getInt(5));
 				type.setAvailableQuantity(rs.getInt(6));
-				tmp.put(type, rs.getInt(7));	
+				type.setAlias(rs.getString(7));
+				tmp.put(type, rs.getInt(8));	
 			}
 			return tmp;
 		}, id);
@@ -96,6 +97,7 @@ public class TypeRepository implements IRepository<Type> {
 		type.setExpectedLifetime(rs.getInt(4));
 		type.setTotalQuantity(rs.getInt(5));
 		type.setAvailableQuantity(rs.getInt(6));
+		type.setAlias(rs.getString(7));
 		return type;
 	};
 	

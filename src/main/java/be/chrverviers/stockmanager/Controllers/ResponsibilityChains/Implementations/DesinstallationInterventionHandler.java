@@ -26,17 +26,15 @@ public class DesinstallationInterventionHandler extends ResponsibilityChain<Inte
 	}
 	
 	private void uninstallItem(Item i) {
-		if(i.getIs_available())
+		if(i.getIsAvailable())
 	        throw new IllegalStateException("Vous ne pouvez désinstaller un objet disponible");
 		
-		i.setIs_placed(false);
-		i.setIs_available(true);
+		i.setIsPlaced(false);
+		i.setIsAvailable(true);
 	}
 	
 	private void updateItemLocation(Intervention intervention) {
 		Item i = intervention.getItem();
-		if(!intervention.getUnit().equals(i.getUnit()))
-			i.setUnit(intervention.getUnit());
 		if(!intervention.getRoom().equals(i.getRoom()))
 			i.setRoom(intervention.getRoom());
 	}

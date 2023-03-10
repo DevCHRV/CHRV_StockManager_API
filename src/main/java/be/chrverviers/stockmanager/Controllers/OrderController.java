@@ -1,5 +1,9 @@
 package be.chrverviers.stockmanager.Controllers;
 
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +24,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;import be.chrverviers.stockmanager.Domain.DTO.OrderDTO;
+import org.springframework.web.bind.annotation.RestController;
+
+import be.chrverviers.stockmanager.Domain.DTO.OrderCreationDTO;
+import be.chrverviers.stockmanager.Domain.DTO.OrderCreationItemDTO;
+import be.chrverviers.stockmanager.Domain.DTO.OrderCreationTypeDTO;
+import be.chrverviers.stockmanager.Domain.DTO.OrderDTO;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Order;
 import be.chrverviers.stockmanager.Domain.Models.Type;
@@ -28,6 +37,7 @@ import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.InterventionRepository;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
 import be.chrverviers.stockmanager.Repositories.OrderRepository;
+import be.chrverviers.stockmanager.Repositories.RoomRepository;
 import be.chrverviers.stockmanager.Repositories.TypeRepository;
 
 @RestController
@@ -46,6 +56,9 @@ public class OrderController {
 	
 	@Autowired
 	TypeRepository typeRepo;
+	
+	@Autowired
+	RoomRepository roomRepo;
 	
     private Logger logger = LoggerFactory.getLogger(OrderController.class);
 	
@@ -70,7 +83,11 @@ public class OrderController {
 		if(order == null)
 			return new ResponseEntity<Object>("Cette commande n'existe pas !", HttpStatus.BAD_REQUEST);
 		//Get and sets it's items
-		order.setItems(itemRepo.findForOrder(order));
+		if(order.getIsReceived()) {
+			order.setItems(itemRepo.findForOrder(order));
+		}else {
+			order.setItems(itemRepo.findForPendingOrder(order));
+		}
 		//Get and sets it's types (and the quantity related to it)
 		order.setTypes(typeRepo.findForOrder(order));
 		return new ResponseEntity<Object>(order, HttpStatus.OK);
@@ -93,21 +110,40 @@ public class OrderController {
 		Order order = request.toOrder();
 		if(order.getId() != id)
 			return new ResponseEntity<Object>("Cette commande n'existe pas !", HttpStatus.BAD_REQUEST);
-		try {
-			//When we update it then it means it's received
-			order.setIsReceived(true);
-			//Save the order
-			orderRepo.save(order, id);
-			//We set the order's items as received
-			itemRepo.receiveForOrder(order);
-			//As we are working with a DTO that isn't complete, we're sending back the completely rebuilt object
-			//To avoid problems
-			logger.info(String.format("User '%s' has successfully updated Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
-			return this.getById(order.getId());
-		} catch(Exception e) {
-			logger.error(String.format("User '%s' has failed to update Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
-			return new ResponseEntity<Object>("La réception à échoué !", HttpStatus.BAD_REQUEST);
+		if(order.getIsReceived()) {
+			//If the order is received then it means that all items are complete and ready to be inserted in the main Item table
+			try {
+				//When we update it then it means it's received
+				order.setIsReceived(true);
+				//Save the order
+				orderRepo.save(order, id);
+				//We give them the default stock room
+				order.getItems().forEach(i->i.setRoom(roomRepo.findByName("Stock").orElse(null)));
+				//We set the order's items as received and insert them in the main Item table
+				itemRepo.createAll(order.getItems(), order);
+				//As we are working with a DTO that isn't complete, we're sending back the completely rebuilt object
+				//To avoid problems
+				logger.info(String.format("User '%s' has successfully completed Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+				return this.getById(order.getId());
+			} catch(Exception e) {
+				logger.error(String.format("User '%s' has failed to complete Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+				return new ResponseEntity<Object>("La réception à échoué !", HttpStatus.BAD_REQUEST);
+			}
+		} else {
+			//If the order is not received then it means that the user is trying to update the OrderItem to complete them.
+			try {
+				//We update the items in the temporary ORDER_ITEM table
+				itemRepo.saveAll(order.getItems(), order);
+				//As we are working with a DTO that isn't complete, we're sending back the completely rebuilt object
+				//To avoid problems
+				logger.info(String.format("User '%s' has successfully updated Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+				return this.getById(order.getId());
+			} catch(Exception e) {
+				logger.error(String.format("User '%s' has failed to update Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
+				return new ResponseEntity<Object>("La réception à échoué !", HttpStatus.BAD_REQUEST);
+			}
 		}
+
 	}
 	
 	/**
@@ -118,7 +154,7 @@ public class OrderController {
 	 * @return the order with it's generated id or an error message
 	 */
   	@PostMapping(value = "/")
-	public @ResponseBody Object save(@RequestBody OrderDTO request) {
+	public @ResponseBody Object save(@RequestBody OrderCreationDTO request) {
 		logger.info(String.format("User '%s' is creating a new Order", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 		try {
 			//We try to transform the DTO into an Order object so that it can't be used as an order by the rest of the api
@@ -129,13 +165,55 @@ public class OrderController {
 			order.setUser(u);
 			//We save the order
 			order.setId(orderRepo.create(order));
-			//We create an item instance for each item of the order and we attach them to the order
+			//We need to get all the items of the DTO, create them (and generate their reference)
+			List<Item> items = new ArrayList<Item>();
 			try {
-				orderRepo.attachAllItemId(order, itemRepo.createAll(order.getItems()));
-			} catch(Exception e) {
+				for(OrderCreationTypeDTO type: request.getTypes()) {
+					for(OrderCreationItemDTO item: type.getItems()) {
+				  		int monthlyCount = itemRepo.getCountForCurrentMonth();
+						for(int i=0; i<item.getQuantity(); i++) {
+							Item tmp = new Item();
+							tmp.setType(type.toItemType());
+							tmp.setReference(generateItemReference(type, item, monthlyCount));
+							tmp.setDescription(item.getDescription());
+							tmp.setPurchasedAt(
+									new Date(
+										item.getPurchasedAt()
+										.atStartOfDay()
+										.atZone(ZoneId.systemDefault())
+										.toInstant().toEpochMilli()
+										)
+									);
+							tmp.setWarrantyExpiresAt(								
+									new Date(
+										item.getWarrantyExpiresAt()
+										.atStartOfDay()
+										.atZone(ZoneId.systemDefault())
+										.toInstant().toEpochMilli()
+									)
+							);
+							tmp.setPrice(item.getPrice());
+							tmp.setProvider(item.getProvider());
+							tmp.setCheckupInterval(item.getCheckupInterval());
+							tmp.setId(itemRepo.create(tmp, order));
+							items.add(tmp);
+							monthlyCount++;
+						}
+					}
+				}
+			}catch (Exception e) {
 				logger.error(String.format("User '%s' has failed to create a new Order with id:'%s'. The Order was created but there was an error during the related Items creation", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), order.getId()));
 				return new ResponseEntity<String>("La création du matériel lié à échoué !", HttpStatus.BAD_REQUEST);
+			} finally {
+				order.setItems(items);
 			}
+//			//We create an item instance for each item of the order and we attach them to the order
+//			try {
+//				orderRepo.attachAllItemId(order, itemRepo.createAll(order.getItems()));
+//			} catch(Exception e) {
+//				logger.error(String.format("User '%s' has failed to create a new Order with id:'%s'. The Order was created but there was an error during the related Items creation", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), order.getId()));
+//				return new ResponseEntity<String>("La création du matériel lié à échoué !", HttpStatus.BAD_REQUEST);
+//			}
 			//We build the map that contains the type and the related quantity as key and value
 			Map<Type, Integer> map = new HashMap<Type, Integer>();
 			for(Item item: order.getItems()) {
@@ -154,4 +232,8 @@ public class OrderController {
 			return new ResponseEntity<String>("La création à échoué !", HttpStatus.BAD_REQUEST);
 		}
 	}
+  	
+  	private String generateItemReference(OrderCreationTypeDTO type, OrderCreationItemDTO item, int count) {
+  		return String.format("%s%02d%02d%05d",type.getAlias(), item.getPurchasedAt().getDayOfMonth(), item.getPurchasedAt().getMonthValue(), count+1);
+  	}
 }

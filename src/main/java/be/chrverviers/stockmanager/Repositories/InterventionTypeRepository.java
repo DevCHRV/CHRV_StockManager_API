@@ -83,6 +83,8 @@ public class InterventionTypeRepository implements IRepository<InterventionType>
 		InterventionType type = new InterventionType();
 		type.setId(rs.getInt(1));
 		type.setName(rs.getString(2));
+		type.setShouldSendMailHelpline(rs.getBoolean(3));
+		type.setShouldSendMailUser(rs.getBoolean(4));
 		return type;
 	};
 	

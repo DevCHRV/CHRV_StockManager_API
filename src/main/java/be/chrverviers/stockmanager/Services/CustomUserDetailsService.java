@@ -1,12 +1,20 @@
 package be.chrverviers.stockmanager.Services;
 
+import java.util.LinkedList;
 import java.util.List;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
+import javax.naming.directory.SearchControls;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ldap.control.PagedResultsDirContextProcessor;
 import org.springframework.ldap.core.AttributesMapper;
+import org.springframework.ldap.core.LdapOperations;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.support.LdapOperationsCallback;
+import org.springframework.ldap.core.support.SingleContextSource;
 import org.springframework.ldap.query.LdapQuery;
+import org.springframework.ldap.query.SearchScope;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -46,7 +54,6 @@ public class CustomUserDetailsService implements UserDetailsService{
      * @return
      */
     public int buildUser(String username) {
-    	final int TEC_ROLE_ID = 3;
     	//Create a query to the LDAP Server
     	LdapQuery query = query()
     			.base("OU=Informatique,OU=Administratifs,OU=Chrv_Users,DC=chplt,DC=be")
@@ -64,8 +71,48 @@ public class CustomUserDetailsService implements UserDetailsService{
     	//Here we create the new user
     	User user = list.get(0);
     	user.setId(userRepository.create(list.get(0)));
-    	//We give him the role TEC
-    	userRepository.attach(new Role(TEC_ROLE_ID), user.getId());
     	return user.getId();
     }
+    
+    /*
+     * 
+     */
+    
+    public List<User> getLDAPUsers(){
+
+    	//Create a Mapper that will return a new User from the query
+		AttributesMapper<User> mapper = new AttributesMapper<User>() {
+	           public User mapFromAttributes(Attributes attrs) throws NamingException {
+	        	   User user = new User();
+	        	   user.setUsername(attrs.get("sAMAccountName")!=null ? ((String) attrs.get("sAMAccountName").get()).toUpperCase() : "No Username");
+	        	   user.setFirstname(attrs.get("sn")!=null ? (String) attrs.get("sn").get() : "Pas de nom");
+	        	   user.setLastname(attrs.get("givenname")!=null ? (String) attrs.get("givenname").get() : "Pas de prénom");
+	        	   user.setEmail(attrs.get("mail")!=null ? (String) attrs.get("mail").get() : "Pas d'email");
+	        	   return user;
+	           }
+         };
+	         
+         PagedResultsDirContextProcessor processor = new PagedResultsDirContextProcessor(1000);
+         SearchControls searchControls = new SearchControls();
+         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+         searchControls.setReturningAttributes(new String[] {"sAMAccountName", "sn", "givenname", "mail"});
+         
+         return SingleContextSource.doWithSingleContext(
+                 ldapTemplate.getContextSource(), new LdapOperationsCallback<List<User>>() {
+             @Override
+             public List<User> doWithLdapOperations(LdapOperations operations) {
+                 List<User> result = new LinkedList<User>();
+                 do {
+                     List<User> oneResult = operations.search("DC=chplt,DC=be",
+                    		 "(&(objectCategory=User)(objectClass=person)(employeeid=*))"
+                    		 , searchControls, mapper, processor);
+                     result.addAll(oneResult);
+                 } while (processor.hasMore());
+                 return result;
+             }
+         });
+	    
+    }
+         
+   
 }

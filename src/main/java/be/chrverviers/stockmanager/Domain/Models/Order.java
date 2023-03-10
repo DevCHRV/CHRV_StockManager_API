@@ -2,17 +2,21 @@ package be.chrverviers.stockmanager.Domain.Models;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -28,22 +32,28 @@ public class Order {
 	@GeneratedValue(strategy= GenerationType.IDENTITY)
 	private int id;		
 	
-	@OneToMany
-	private List<Item> items;
+	@OneToMany(fetch=FetchType.LAZY)
+	@JoinColumn(name="order_id")
+	private List<Item> items = Collections.emptyList();
 	
 	@JsonSerialize(using=OrderTypeSerializer.class)
 	@ManyToMany(targetEntity=Type.class)
-	private Map<Type,Integer> types;
+	private Map<Type,Integer> types = Collections.emptyMap();
 	
 	@ManyToOne
-	private User user;
+	private User user = new User();
 	
-	private Date date;
+	private Date date = new Date();
 	
 	private boolean isReceived;
 	
 	public Order() {
 		super();
+	}
+	
+	public Order(int id) {
+		super();
+		this.id = id;
 	}
 
 	public Order(int id, List<Item> items, Map<Type, Integer> types, User user, Date date, boolean isReceived) {

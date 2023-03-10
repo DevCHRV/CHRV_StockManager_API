@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,6 +33,7 @@ import be.chrverviers.stockmanager.Repositories.TypeRepository;
 
 @RestController
 @RequestMapping(value = "api/item", produces="application/json")
+@Transactional
 public class ItemController {
 
 	@Autowired
@@ -116,7 +118,7 @@ public class ItemController {
 	@PostMapping(value = "/")
 	public @ResponseBody Object save(@RequestBody Item item) {
 		logger.info(String.format("User '%s' is creating a new Item", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
-		if(item.getSerial_number()==null) {
+		if(item.getSerialNumber()==null) {
 			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'serial_number'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("Le numéro de série ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
@@ -128,11 +130,11 @@ public class ItemController {
 			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'description'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("La description ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}
-		if(item.getPurchased_at()==null) {
+		if(item.getPurchasedAt()==null) {
 			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'purchase date'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("La date d'achat ne peut pas être vide", HttpStatus.BAD_REQUEST);
 		}
-		if(item.getWarranty_expires_at()==null) {
+		if(item.getWarrantyExpiresAt()==null) {
 			logger.info(String.format("User '%s' failed to create a new Item due to bad request: bad 'warranty expiration date'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
 			return new ResponseEntity<Object>("La date d'expiration de la garantie ne peut pas être vide !", HttpStatus.BAD_REQUEST);
 		}

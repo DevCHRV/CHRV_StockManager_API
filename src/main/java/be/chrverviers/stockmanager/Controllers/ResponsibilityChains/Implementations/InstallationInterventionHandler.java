@@ -26,17 +26,15 @@ public class InstallationInterventionHandler extends ResponsibilityChain<Interve
 	}
 	
 	private void installItem(Item i) {
-	    if(!i.getIs_available())
+	    if(!i.getIsAvailable())
 	        throw new IllegalStateException("Vous ne pouvez pas installer un objet indisponible.");
 	    
-        i.setIs_placed(true);
-        i.setIs_available(false);
+        i.setIsPlaced(true);
+        i.setIsAvailable(false);
 	}
 	
 	private void updateItemLocation(Intervention intervention) {
 		Item i = intervention.getItem();
-		if(!intervention.getUnit().equals(i.getUnit()))
-			i.setUnit(intervention.getUnit());
 		if(!intervention.getRoom().equals(i.getRoom()))
 			i.setRoom(intervention.getRoom());
 	}

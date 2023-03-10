@@ -8,6 +8,7 @@ import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.In
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.ResponsibilityChain;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.Item;
+import be.chrverviers.stockmanager.Repositories.InterventionRepository;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
 import be.chrverviers.stockmanager.Repositories.LicenceRepository;
 
@@ -23,12 +24,16 @@ public class LicenceDesinstallationInterventionHandler extends ResponsibilityCha
 	@Autowired
 	ItemRepository itemRepo;
 	
+	@Autowired
+	InterventionRepository interventionRepo;
+	
 	@Override
 	public void handle(Intervention request) {
         if (request.getType().getId() == InterventionTypeEnum.DESINSTALLATION_LICENCE.value) {
         	sendMail(request);
         	licenceRepo.detachAll(licenceRepo.findForItem(request.getItem()));
         	licenceRepo.attachAll(request.getLicences(), request.getItem());
+        	interventionRepo.detachAll(request.getLicences(), request);
 			itemRepo.save(request.getItem());
         } else if (next != null) {
             next.handle(request);

@@ -14,6 +14,10 @@ public class InterventionType {
 	
 	private String name;
 	
+	private Boolean shouldSendMailHelpline;
+	
+	private Boolean shouldSendMailUser;
+	
 	public InterventionType() {
 		super();
 	}
@@ -38,5 +42,21 @@ public class InterventionType {
 	public void setName(String name) {
 		this.name = name;
 	}
+	
+	public Boolean getShouldSendMailHelpline() {
+		return shouldSendMailHelpline;
+	}
+
+	public void setShouldSendMailHelpline(Boolean shouldSendMailHelpline) {
+		this.shouldSendMailHelpline = shouldSendMailHelpline;
+	}
+
+	public Boolean getShouldSendMailUser() {
+		return shouldSendMailUser;
+	}
+
+	public void setShouldSendMailUser(Boolean shouldSendMailUser) {
+		this.shouldSendMailUser = shouldSendMailUser;
+	}	
 	
 }

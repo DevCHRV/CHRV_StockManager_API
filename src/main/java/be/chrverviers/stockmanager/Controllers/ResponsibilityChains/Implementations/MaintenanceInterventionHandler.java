@@ -3,25 +3,22 @@ package be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Implementat
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.InterventionTypeEnum;
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.ResponsibilityChain;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
-import be.chrverviers.stockmanager.Domain.Models.InterventionType;
 import be.chrverviers.stockmanager.Domain.Models.Item;
-import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.InterventionTypeRepository;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
-import be.chrverviers.stockmanager.Repositories.LicenceRepository;
+import be.chrverviers.stockmanager.Services.EmailService;
 
 @Service
 public class MaintenanceInterventionHandler extends ResponsibilityChain<Intervention>{
 	
 	@Autowired
-	private JavaMailSender emailSender;
+	private EmailService emailService;
 	
 	@Autowired
 	ItemRepository itemRepo;
@@ -29,12 +26,14 @@ public class MaintenanceInterventionHandler extends ResponsibilityChain<Interven
 	@Autowired
 	InterventionTypeRepository interventionTypeRepo;
 	
+	//Helpline: 2644@chrverviers.be
+	
 	@Override
 	public void handle(Intervention request) {
         if (request.getType().getId() == InterventionTypeEnum.MAINTENANCE.value) {
         	sendMail(request);
         	Item item = request.getItem();
-        	item.setLast_checkup_at(request.getExpectedDate());
+        	item.setLastCheckupAt(request.getExpectedDate());
 			itemRepo.save(item);
         } else if (next != null) {
             next.handle(request);
@@ -42,21 +41,7 @@ public class MaintenanceInterventionHandler extends ResponsibilityChain<Interven
 	}
 	
 	private void sendMail(Intervention intervention) {
-		SimpleMailMessage message = new SimpleMailMessage();
-		User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		intervention.setType(interventionTypeRepo.findById(intervention.getType().getId()).orElse(intervention.getType()));
-		
-		message.setFrom("stockmanager@chrverviers.be");
-		message.setTo(user.getEmail());
-		message.setSubject("Intervention #"+intervention.getId()+"#");
-		message.setText("Une intervention de type "+intervention.getType().getName()+" a été réalisée par:\n"+
-		intervention.getUser().getFirstname()+" "+intervention.getUser().getLastname()+"\nEn date du: "+intervention.getExpectedDate()
-		+"\nAvec pour description:\n"+intervention.getDescription());
-		
-		Runnable runnable = () -> { 
-			this.emailSender.send(message);
-		};
-		Thread t = new Thread(runnable);
-		t.start();
+		emailService.sendMail(intervention);
 	}
 }

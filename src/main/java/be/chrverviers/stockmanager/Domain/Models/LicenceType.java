@@ -17,6 +17,8 @@ public class LicenceType {
 	
 	private String name;
 	
+	private String alias;
+	
 	public LicenceType() {
 		super();
 	}
@@ -24,6 +26,12 @@ public class LicenceType {
 	public LicenceType(String name) {
 		super();
 		this.name = name;
+	}
+	
+	public LicenceType(String name, String alias) {
+		super();
+		this.name = name;
+		this.alias = alias;
 	}
 	
 	public int getId() {
@@ -42,4 +50,11 @@ public class LicenceType {
 		this.name = name;
 	}
 	
+	public String getAlias() {
+		return this.alias;
+	}
+	
+	public void setAlias(String alias) {
+		this.alias = alias;
+	}
 }

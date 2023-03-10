@@ -17,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,6 +34,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 
 @RestController
 @RequestMapping(value = "api/auth")
+@Transactional
 public class AuthController {
 	
 	/**
@@ -57,7 +59,7 @@ public class AuthController {
 	@PostMapping(value = "/login")
 	public ResponseEntity<Object> authenticateUser(@RequestBody LoginDTO loginDto, HttpServletResponse request){
 		try {
-			logger.info(String.format("User '%s' is trying to establish connction...", loginDto.username));
+			logger.info(String.format("User '%s' is trying to connect...", loginDto.username));
 			loginDto.setUsername(loginDto.getUsername().toUpperCase());
 			//Try to authenticate the user with the Active Directory
 	        authenticationManager.authenticate(
@@ -134,7 +136,6 @@ public class AuthController {
 	 */
 	@GetMapping("current") ResponseEntity<Object> current() {
 		User u = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-		logger.info(String.format("User '%s' is refreshing his informations", u.getUsername()));
 		if(u==null || u == null) {
 			return new ResponseEntity<Object>("Aucun utilisateur n'est connecté !", HttpStatus.UNAUTHORIZED);
 		}

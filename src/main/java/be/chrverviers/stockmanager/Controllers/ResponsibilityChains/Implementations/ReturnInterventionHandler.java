@@ -26,17 +26,14 @@ public class ReturnInterventionHandler extends ResponsibilityChain<Intervention>
 	}
 	
 	private void returnItem(Item i) {
-	    if(i.getIs_available())
+	    if(i.getIsAvailable())
 	        throw new IllegalStateException("Vous ne pouvez pas retourner un objet déjà rendu.");
-	    i.setIs_available(true);
+	    i.setIsAvailable(true);
 	}
 	
 	private void updateItemLocation(Intervention intervention) {
 		Item i = intervention.getItem();
-		if(!intervention.getUnit().equals(i.getUnit()))
-			i.setUnit(intervention.getUnit());
 		if(!intervention.getRoom().equals(i.getRoom()))
 			i.setRoom(intervention.getRoom());
 	}
-	
 }

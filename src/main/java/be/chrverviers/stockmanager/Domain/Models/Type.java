@@ -19,6 +19,7 @@ public class Type implements Comparable<Type> {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 	private String name;
+	private String alias;
 	private String description;
 	private int expectedLifetime;
 	private int totalQuantity;
@@ -31,13 +32,26 @@ public class Type implements Comparable<Type> {
 		super();
 	}
 	
-	public Type(String name, String description, int expectedLifetime, int totalQuantity, int availableQuantity) {
+	public Type(String name, String alias, String description, int expectedLifetime, int totalQuantity, int availableQuantity) {
 		super();
 		this.name = name;
+		this.alias = alias;
 		this.description = description;
 		this.expectedLifetime = expectedLifetime;
 		this.totalQuantity = totalQuantity;
 		this.availableQuantity = availableQuantity;
+	}
+	
+	public Type(int id, String name) {
+		this.id = id;
+		this.name = name;
+	}
+	
+	public Type(int id, String alias, String name, String description) {
+		this.id = id;
+		this.alias = alias;
+		this.name = name;
+		this.description = description;
 	}
 	
 	public int getId() {
@@ -54,6 +68,14 @@ public class Type implements Comparable<Type> {
 	
 	public void setName(String name) {
 		this.name = name;
+	}
+	
+	public String getAlias() {
+		return this.alias;
+	}
+	
+	public void setAlias(String alias) {
+		this.alias = alias;
 	}
 	
 	public String getDescription() {

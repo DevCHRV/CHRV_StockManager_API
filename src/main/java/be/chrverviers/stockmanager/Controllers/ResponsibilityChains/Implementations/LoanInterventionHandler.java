@@ -6,13 +6,18 @@ import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.In
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.ResponsibilityChain;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.Item;
+import be.chrverviers.stockmanager.Domain.Models.Room;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
+import be.chrverviers.stockmanager.Repositories.RoomRepository;
 
 @Service
 public class LoanInterventionHandler extends ResponsibilityChain<Intervention> {
 
 	@Autowired
 	ItemRepository itemRepo;
+	
+	@Autowired
+	RoomRepository roomRepo;
 	
 	@Override
 	public void handle(Intervention request) {
@@ -26,15 +31,15 @@ public class LoanInterventionHandler extends ResponsibilityChain<Intervention> {
 	}
 	
 	private void loanItem(Item i) {
-	    if(!i.getIs_available())
+	    if(!i.getIsAvailable())
 	        throw new IllegalStateException("Vous ne pouvez pas prêter un objet indisponible.");
-	    i.setIs_available(false);
+	    i.setIsAvailable(false);
 	}
 	
 	private void updateItemLocation(Intervention intervention) {
 		Item i = intervention.getItem();
-		i.setUnit("Prêt");
-		i.setRoom("");
+		if(!intervention.getRoom().equals(i.getRoom()))
+			i.setRoom(intervention.getRoom());
 	}
 	
 }

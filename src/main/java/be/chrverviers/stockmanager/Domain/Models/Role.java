@@ -33,18 +33,6 @@ public class Role {
 		this.id = id;
 	}
 	
-//    @ManyToMany(fetch=FetchType.LAZY, mappedBy = "roles")
-//	private Set<User> users;
-	
-	@ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "roles_privileges", 
-            joinColumns = @JoinColumn(
-              name = "role_id", referencedColumnName = "id"), 
-            inverseJoinColumns = @JoinColumn(
-              name = "privilege_id", referencedColumnName = "id"))
-	private Set<Privilege> privileges = Collections.emptySet();
-	
 	public int getId() {
 		return id;
 	}
@@ -68,13 +56,4 @@ public class Role {
 //	public void setUsers(Set<User> users) {
 //		this.users = users;
 //	}
-
-	public Set<Privilege> getPrivileges() {
-		return privileges;
-	}
-
-	public void setPrivileges(Set<Privilege> privileges) {
-		this.privileges = privileges;
-	}
-
 }

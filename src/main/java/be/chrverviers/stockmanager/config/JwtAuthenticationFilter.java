@@ -45,15 +45,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 				return;
 			}
 			
-			
-//			if(authHeader==null || !authHeader.startsWith("Bearer ")) {
-//				filterChain.doFilter(request, response);
-//				return;
-//			}
-			//Start index seven to pick what is after 'Bearer '
-//			String jwt = authHeader.substring(7);
-//			String username = jwtService.extractUsername(jwt);
-			
 			String jwt = cookie.getValue();
 			String username = jwtService.extractUsername(jwt);
 

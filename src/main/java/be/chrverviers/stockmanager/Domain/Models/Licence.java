@@ -1,5 +1,7 @@
 package be.chrverviers.stockmanager.Domain.Models;
 
+import java.util.Date;
+
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -20,8 +22,10 @@ public class Licence {
 	@Id
 	@GeneratedValue(strategy= GenerationType.IDENTITY)
 	private int id;
+	private String reference;
 	private String description;
 	private String value;
+	private Date purchasedAt;
 	
 	@ManyToOne(fetch=FetchType.LAZY)
 	private User user;
@@ -37,8 +41,14 @@ public class Licence {
 		super();
 	}
 	
-	public Licence(String description) {
+	public Licence(String reference) {
 		super();
+		this.reference = reference;
+	}
+	
+	public Licence(String reference, String description) {
+		super();
+		this.reference = reference;
 		this.description = description;
 	}
 	
@@ -49,11 +59,20 @@ public class Licence {
 		this.type = type;
 	}
 	
-	public Licence(int id, String description, String value, User user, LicenceType type, Item item) {
+	public Licence(String description, String value, LicenceType type, Date purchasedAt) {
+		super();
+		this.description = description;
+		this.value = value;
+		this.type = type;
+		this.purchasedAt = purchasedAt;
+	}
+	
+	public Licence(int id, String description, String value, User user, LicenceType type, Date purchasedAt, Item item) {
 		super();
 		this.id = id;
 		this.description = description;
 		this.value = value;
+		this.purchasedAt = purchasedAt;
 		this.user = user;
 		this.type = type;
 		this.item = item;
@@ -67,6 +86,14 @@ public class Licence {
 		this.id = id;
 	}
 	
+	public String getReference() {
+		return reference;
+	}
+
+	public void setReference(String reference) {
+		this.reference = reference;
+	}
+
 	public String getDescription() {
 		return description;
 	}
@@ -106,5 +133,12 @@ public class Licence {
 	public void setItem(Item item) {
 		this.item = item;
 	}
-	
+
+	public Date getPurchasedAt() {
+		return purchasedAt;
+	}
+
+	public void setPurchasedAt(Date purchasedAt) {
+		this.purchasedAt = purchasedAt;
+	}
 }

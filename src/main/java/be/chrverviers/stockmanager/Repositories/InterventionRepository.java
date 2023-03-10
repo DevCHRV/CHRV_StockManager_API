@@ -3,11 +3,11 @@ package be.chrverviers.stockmanager.Repositories;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
-
+import java.util.Optional;import org.aspectj.apache.bcel.generic.Type;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -19,6 +19,8 @@ import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.InterventionType;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
+import be.chrverviers.stockmanager.Domain.Models.Room;
+import be.chrverviers.stockmanager.Domain.Models.Unit;
 import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;
 
@@ -34,13 +36,18 @@ public class InterventionRepository implements IRepository<Intervention> {
 	
 	@Override
 	public List<Intervention> findAll() {
-		String query = "SELECT i.*, it.*, u.*, t.id, t.reference FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID=it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN CCLIB.ITEM t ON i.ITEM_ID = t.ID ORDER BY EXPECTED_DATE DESC";
+		String query = "SELECT i.*, it.*, u.*, t.id, t.reference, ro.*, un.* FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID=it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN CCLIB.ITEM t ON i.ITEM_ID = t.ID JOIN CCLIB.ROOM ro ON i.ROOM_ID = ro.ID JOIN CCLIB.UNIT un ON ro.UNIT_ID = un.ID ORDER BY EXPECTED_DATE DESC";
+		return template.query(query, rowMapper);
+	}
+	
+	public List<Intervention> findAllPending() {
+		String query = "SELECT i.*, it.*, u.*, t.id, t.reference, ro.*, un.* FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID=it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN CCLIB.ITEM t ON i.ITEM_ID = t.ID JOIN CCLIB.ROOM ro ON i.ROOM_ID = ro.ID JOIN CCLIB.UNIT un ON ro.UNIT_ID = un.ID WHERE i.ACTUAL_DATE IS NULL";
 		return template.query(query, rowMapper);
 	}
 
 	@Override
 	public Optional<Intervention> findById(int id) {
-		String query = "SELECT i.*, it.*, u.*, n.*, t.id, t.reference, t.serial_number FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID = it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN CCLIB.USER n ON i.NOTIFIER_ID = n.ID LEFT JOIN CCLIB.ITEM t ON i.ITEM_ID = t.ID LEFT JOIN CCLIB.REPORT r ON r.INTERVENTION_ID = i.ID WHERE i.ID = ?";
+		String query = "SELECT i.*, it.*, u.*, n.*, t.id, t.name, t.reference, ro.*, un.* FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID = it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN CCLIB.USER n ON i.NOTIFIER_ID = n.ID LEFT JOIN CCLIB.ITEM t ON i.ITEM_ID = t.ID LEFT JOIN CCLIB.REPORT r ON r.INTERVENTION_ID = i.ID LEFT JOIN CCLIB.ROOM ro ON i.ROOM_ID = ro.ID LEFT JOIN CCLIB.UNIT un ON ro.UNIT_ID = un.ID WHERE i.ID = ?";
 		Intervention intervention = new Intervention();
 		try { 
 			intervention = template.queryForObject(query, withNotifierAndItemRowMapper, id);
@@ -51,7 +58,7 @@ public class InterventionRepository implements IRepository<Intervention> {
 	}
 	
 	public List<Intervention> findForItem(Item item){
-		String query = "SELECT i.*, it.*, u.*, t.id, t.reference FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID=it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN ITEM t ON i.ITEM_ID = t.ID WHERE i.ITEM_ID = ? ORDER BY EXPECTED_DATE DESC";
+		String query = "SELECT i.*, it.*, u.*, t.id, t.reference, ro.*, un.* FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID=it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN ITEM t ON i.ITEM_ID = t.ID LEFT JOIN CCLIB.ROOM ro ON i.ROOM_ID = ro.ID LEFT JOIN CCLIB.UNIT un ON ro.UNIT_ID = un.ID WHERE i.ITEM_ID = ? ORDER BY EXPECTED_DATE DESC";
 		List<Intervention> interventions = new ArrayList<Intervention>();
 		try { 
 			interventions = template.query(query, rowMapper, item.getId());
@@ -62,7 +69,7 @@ public class InterventionRepository implements IRepository<Intervention> {
 	}
 	
 	public List<Intervention> findForItemId(int itemId){
-		String query = "SELECT i.*, it.*, u.*, t.id, t.reference FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID=it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN ITEM t ON i.ITEM_ID = t.ID WHERE i.ITEM_ID = ? ORDER BY EXPECTED_DATE DESC";
+		String query = "SELECT i.*, it.*, u.*, t.id, t.reference, ro.*, un.* FROM CCLIB.INTERVENTION i LEFT JOIN CCLIB.INTERVENTION_TYPE it ON i.TYPE_ID=it.ID LEFT JOIN CCLIB.USER u ON i.USER_ID = u.ID LEFT JOIN ITEM t ON i.ITEM_ID = t.ID LEFT JOIN CCLIB.ROOM ro ON i.ROOM_ID = ro.ID LEFT JOIN CCLIB.UNIT un ON ro.UNIT_ID = un.ID WHERE i.ITEM_ID = ? ORDER BY EXPECTED_DATE DESC";
 		List<Intervention> interventions = new ArrayList<Intervention>();
 		try { 
 			interventions = template.query(query, rowMapper, itemId);
@@ -75,19 +82,21 @@ public class InterventionRepository implements IRepository<Intervention> {
 	@Override
 	public int create(Intervention t) {
 		GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
-		String query = "INSERT INTO CCLIB.INTERVENTION (ID, DESCRIPTION, EXPECTED_DATE, ACTUAL_DATE, UNIT, ROOM, USER_ID, TYPE_ID, TICKET_NUMBER, ITEM_ID) VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		String query = "INSERT INTO CCLIB.INTERVENTION (ID, DESCRIPTION, EXPECTED_DATE, ACTUAL_DATE, ROOM_ID, USER_ID, TYPE_ID, TICKET_NUMBER, ITEM_ID) VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?)";
 		
 		template.update(connection -> {
 			PreparedStatement ps =  connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 			ps.setString(1, t.getDescription());
 			ps.setDate(2, new Date(t.getExpectedDate().getTime()));
-			ps.setDate(3, new Date(t.getActualDate().getTime()));
-			ps.setString(4, t.getUnit());
-			ps.setString(5, t.getRoom());
-			ps.setInt(6, t.getUser().getId());
-			ps.setInt(7, t.getType().getId());
-			ps.setString(8, t.getTicketNumber());
-			ps.setInt(9,  t.getItem().getId());
+			ps.setDate(3, t.getActualDate()!=null ? new Date(t.getActualDate().getTime()) : null);
+			if(t.getRoom()!=null)
+				ps.setInt(4, t.getRoom().getId());
+			else
+				ps.setNull(4, Types.INTEGER);
+			ps.setInt(5, t.getUser().getId());
+			ps.setInt(6, t.getType().getId());
+			ps.setString(7, t.getTicketNumber());
+			ps.setInt(8,  t.getItem().getId());
 			return ps;
 		}, keyHolder);
 		return keyHolder.getKey().intValue();
@@ -109,12 +118,23 @@ public class InterventionRepository implements IRepository<Intervention> {
 			this.attach(l, i);
 		}
 	}
+	
+	public void detachAll(Collection<Licence> list, Intervention i) {
+		for(Licence l:list) {
+			this.detach(l, i);
+		}
+	}
+	
+	public void detach(Licence l, Intervention i) {
+		String query = "DELETE FROM CCLIB.INTERVENTION_LICENCE WHERE LICENCE_ID = ? AND INTERVENTION_ID = ?";
+		template.update(query, l.getId(), i.getId());
+	}
 
 	@Override
 	public Intervention save(Intervention t, int id) {
-		String query = "UPDATE CCLIB.INTERVENTION t SET t.DESCRIPTION = ?, t.EXPECTED_DATE = ?, t.ACTUAL_DATE = ?, t.UNIT = ?, t.ROOM = ?, t.NOTIFIER_ID = ?, t.TYPE_ID = ?, t.TICKET_NUMBER = ? WHERE t.ID = ?";
+		String query = "UPDATE CCLIB.INTERVENTION t SET t.DESCRIPTION = ?, t.EXPECTED_DATE = ?, t.ACTUAL_DATE = ?, t.ROOM_ID = ?, t.NOTIFIER_ID = ?, t.TYPE_ID = ?, t.TICKET_NUMBER = ? WHERE t.ID = ?";
 		Integer notifierId = (t.getNotifier()!=null&&t.getNotifier().getId()!=0) ? t.getNotifier().getId() : null;
-		template.update(query, t.getDescription(), t.getExpectedDate(), t.getActualDate(), t.getUnit(), t.getRoom(), notifierId, t.getType().getId(), t.getTicketNumber(), id);
+		template.update(query, t.getDescription(), t.getExpectedDate(), t.getActualDate(), t.getRoom().getId(), notifierId, t.getType().getId(), t.getTicketNumber(), id);
 		return null;
 	}
 
@@ -139,25 +159,33 @@ public class InterventionRepository implements IRepository<Intervention> {
 		intervention.setDescription(rs.getString(2));
 		intervention.setExpectedDate(rs.getDate(3));
 		intervention.setActualDate(rs.getDate(4));
-		intervention.setUnit(rs.getString(5));
-		intervention.setRoom(rs.getString(6));
-		intervention.setTicketNumber(rs.getString(10));
+		intervention.setTicketNumber(rs.getString(8));
 		InterventionType type = new InterventionType();
-		type.setId(rs.getInt(12));
-		type.setName(rs.getString(13));
+		type.setId(rs.getInt(11));
+		type.setName(rs.getString(12));
+		type.setShouldSendMailHelpline(rs.getBoolean(13));
+		type.setShouldSendMailUser(rs.getBoolean(14));
 		intervention.setType(type);
 		User user = new User();
-		user.setId(rs.getInt(14));
-		user.setUsername(rs.getString(15));
-		user.setFirstname(rs.getString(16));
-		user.setLastname(rs.getString(17));
-		user.setIsActive(rs.getBoolean(18));
-		user.setEmail(rs.getString(19));
+		user.setId(rs.getInt(15));
+		user.setUsername(rs.getString(16));
+		user.setFirstname(rs.getString(17));
+		user.setLastname(rs.getString(18));
+		user.setIsActive(rs.getBoolean(19));
+		user.setEmail(rs.getString(20));
 		intervention.setUser(user);
 		Item item = new Item();
-		item.setId(rs.getInt(20));
-		item.setReference(rs.getString(21));
+		item.setId(rs.getInt(21));
+		item.setReference(rs.getString(22));
 		intervention.setItem(item);
+		Room room = new Room();
+		room.setId(rs.getInt(23));
+		room.setName(rs.getString(24));
+		intervention.setRoom(room);
+		Unit unit= new Unit();
+		unit.setId(rs.getInt(26));
+		unit.setName(rs.getString(27));
+		room.setUnit(unit);
 		return intervention;
 	};
 	
@@ -167,32 +195,41 @@ public class InterventionRepository implements IRepository<Intervention> {
 		intervention.setDescription(rs.getString(2));
 		intervention.setExpectedDate(rs.getDate(3));
 		intervention.setActualDate(rs.getDate(4));
-		intervention.setUnit(rs.getString(5));
-		intervention.setRoom(rs.getString(6));
-		intervention.setTicketNumber(rs.getString(10));
+		intervention.setTicketNumber(rs.getString(8));
 		InterventionType type = new InterventionType();
-		type.setId(rs.getInt(12));
-		type.setName(rs.getString(13));
+		type.setId(rs.getInt(11));
+		type.setName(rs.getString(12));
+		type.setShouldSendMailHelpline(rs.getBoolean(13));
+		type.setShouldSendMailUser(rs.getBoolean(14));
 		intervention.setType(type);
 		User user = new User();
-		user.setId(rs.getInt(14));
-		user.setUsername(rs.getString(15));
-		user.setFirstname(rs.getString(16));
-		user.setLastname(rs.getString(17));
-		user.setIsActive(rs.getBoolean(18));
-		user.setEmail(rs.getString(19));
+		user.setId(rs.getInt(15));
+		user.setUsername(rs.getString(16));
+		user.setFirstname(rs.getString(17));
+		user.setLastname(rs.getString(18));
+		user.setIsActive(rs.getBoolean(19));
+		user.setEmail(rs.getString(20));
 		intervention.setUser(user);
 		User notifier = new User();
-		notifier.setId(rs.getInt(20));
-		notifier.setUsername(rs.getString(21));
-		notifier.setFirstname(rs.getString(22));
-		notifier.setLastname(rs.getString(23));
-		notifier.setIsActive(rs.getBoolean(24));
-		notifier.setEmail(rs.getString(25));
+		notifier.setId(rs.getInt(21));
+		notifier.setUsername(rs.getString(22));
+		notifier.setFirstname(rs.getString(23));
+		notifier.setLastname(rs.getString(24));
+		notifier.setIsActive(rs.getBoolean(25));
+		notifier.setEmail(rs.getString(26));
 		intervention.setNotifier(notifier);
 		Item item = new Item();
-		item.setId(rs.getInt(26));
-		item.setReference(rs.getString(27));
+		item.setId(rs.getInt(27));
+		item.setName(rs.getString(28));
+		item.setReference(rs.getString(29));
+		Room room = new Room();
+		room.setId(rs.getInt(30));
+		room.setName(rs.getString(31));
+		intervention.setRoom(room);
+		Unit unit= new Unit();
+		unit.setId(rs.getInt(33));
+		unit.setName(rs.getString(34));
+		room.setUnit(unit);
 		return intervention;
 	};
 	
@@ -202,39 +239,42 @@ public class InterventionRepository implements IRepository<Intervention> {
 		intervention.setDescription(rs.getString(2));
 		intervention.setExpectedDate(rs.getDate(3));
 		intervention.setActualDate(rs.getDate(4));
-		intervention.setUnit(rs.getString(5));
-		intervention.setRoom(rs.getString(6));
-		intervention.setTicketNumber(rs.getString(10));
+		intervention.setTicketNumber(rs.getString(8));
 		InterventionType type = new InterventionType();
-		type.setId(rs.getInt(12));
-		type.setName(rs.getString(13));
+		type.setId(rs.getInt(11));
+		type.setName(rs.getString(12));
+		type.setShouldSendMailHelpline(rs.getBoolean(13));
+		type.setShouldSendMailUser(rs.getBoolean(14));
 		intervention.setType(type);
 		User user = new User();
-		user.setId(rs.getInt(14));
-		user.setUsername(rs.getString(15));
-		user.setFirstname(rs.getString(16));
-		user.setLastname(rs.getString(17));
-		user.setIsActive(rs.getBoolean(18));
-		user.setEmail(rs.getString(19));
+		user.setId(rs.getInt(15));
+		user.setUsername(rs.getString(16));
+		user.setFirstname(rs.getString(17));
+		user.setLastname(rs.getString(18));
+		user.setIsActive(rs.getBoolean(19));
+		user.setEmail(rs.getString(20));
 		intervention.setUser(user);
 		User notifier = new User();
-		notifier.setId(rs.getInt(20));
-		notifier.setUsername(rs.getString(21));
-		notifier.setFirstname(rs.getString(22));
-		notifier.setLastname(rs.getString(23));
-		notifier.setIsActive(rs.getBoolean(24));
-		notifier.setEmail(rs.getString(25));
+		notifier.setId(rs.getInt(21));
+		notifier.setUsername(rs.getString(22));
+		notifier.setFirstname(rs.getString(23));
+		notifier.setLastname(rs.getString(24));
+		notifier.setIsActive(rs.getBoolean(25));
+		notifier.setEmail(rs.getString(26));
 		intervention.setNotifier(notifier);
 		Item item = new Item();
-		item.setId(rs.getInt(26));
-		item.setReference(rs.getString(27));
-		item.setSerial_number(rs.getString(28));
+		item.setId(rs.getInt(27));
+		item.setName(rs.getString(28));
+		item.setReference(rs.getString(29));
 		intervention.setItem(item);
-//		Report report = new Report();
-//		report.setId(rs.getInt(25));
-//		report.setDescription(rs.getString(26));
-//		report.setIntervention(intervention);
-//		intervention.setReport(report);
+		Room room = new Room();
+		room.setId(rs.getInt(30));
+		room.setName(rs.getString(31));
+		intervention.setRoom(room);
+		Unit unit= new Unit();
+		unit.setId(rs.getInt(33));
+		unit.setName(rs.getString(34));
+		room.setUnit(unit);
 		return intervention;
 	};
 

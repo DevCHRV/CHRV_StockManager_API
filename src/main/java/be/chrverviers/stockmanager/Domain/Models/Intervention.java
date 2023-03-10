@@ -42,9 +42,8 @@ public class Intervention {
 	
 	private Date actualDate;
 	
-	private String unit;
-	
-	private String room;
+	@ManyToOne
+	private Room room;
 	
 	private String ticketNumber;
 
@@ -52,13 +51,12 @@ public class Intervention {
 		super();
 	}
 	
-	public Intervention(int id, InterventionType type, Report report, String description, User notifier, User user,
-			Item item, List<Licence> licences, Date expectedDate, Date actualDate, String unit, String room,
+	public Intervention(int id, InterventionType type, String description, User notifier, User user,
+			Item item, List<Licence> licences, Date expectedDate, Date actualDate, Room room,
 			String ticketNumber) {
 		super();
 		this.id = id;
 		this.type = type;
-		this.report = report;
 		this.description = description;
 		this.notifier = notifier;
 		this.user = user;
@@ -66,12 +64,9 @@ public class Intervention {
 		this.licences = licences;
 		this.expectedDate = expectedDate;
 		this.actualDate = actualDate;
-		this.unit = unit;
 		this.room = room;
 		this.ticketNumber = ticketNumber;
 	}
-
-
 
 	public int getId() {
 		return id;
@@ -145,19 +140,11 @@ public class Intervention {
 		this.actualDate = actualDate;
 	}
 
-	public String getUnit() {
-		return unit;
-	}
-
-	public void setUnit(String unit) {
-		this.unit = unit;
-	}
-
-	public String getRoom() {
+	public Room getRoom() {
 		return room;
 	}
 
-	public void setRoom(String room) {
+	public void setRoom(Room room) {
 		this.room = room;
 	}
 
@@ -175,5 +162,10 @@ public class Intervention {
 
 	public void setLicences(List<Licence> licences) {
 		this.licences = licences;
+	}
+
+	@Override
+	public String toString() {
+		return "Intervention [id=" + id + ", ticketNumber=" + ticketNumber + "]";
 	}
 }

@@ -10,6 +10,7 @@ import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.Re
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.InterventionType;
 import be.chrverviers.stockmanager.Domain.Models.User;
+import be.chrverviers.stockmanager.Repositories.InterventionRepository;
 import be.chrverviers.stockmanager.Repositories.InterventionTypeRepository;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
 import be.chrverviers.stockmanager.Repositories.LicenceRepository;
@@ -27,6 +28,9 @@ public class LicenceInstallationInterventionHandler extends ResponsibilityChain<
 	ItemRepository itemRepo;
 	
 	@Autowired
+	InterventionRepository interventionRepo;
+	
+	@Autowired
 	InterventionTypeRepository interventionTypeRepo;
 	
 	@Override
@@ -35,6 +39,7 @@ public class LicenceInstallationInterventionHandler extends ResponsibilityChain<
         	sendMail(request);
         	licenceRepo.detachAll(licenceRepo.findForItem(request.getItem()));
         	licenceRepo.attachAll(request.getLicences(), request.getItem());
+        	interventionRepo.attachAll(request.getLicences(), request);
 			itemRepo.save(request.getItem());
         } else if (next != null) {
             next.handle(request);
