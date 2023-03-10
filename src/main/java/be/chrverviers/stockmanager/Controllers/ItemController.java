@@ -25,10 +25,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
+import be.chrverviers.stockmanager.Domain.Models.Room;
 import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.InterventionRepository;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
 import be.chrverviers.stockmanager.Repositories.LicenceRepository;
+import be.chrverviers.stockmanager.Repositories.RoomRepository;
 import be.chrverviers.stockmanager.Repositories.TypeRepository;
 
 @RestController
@@ -48,9 +50,11 @@ public class ItemController {
 	@Autowired
 	TypeRepository typeRepo;
 	
-    private Logger logger = LoggerFactory.getLogger(ItemController.class);
-
+	@Autowired
+	RoomRepository roomRepo;
 	
+    private Logger logger = LoggerFactory.getLogger(ItemController.class);
+    
 	/**
 	 * Simple GET method
 	 * @return all the items
@@ -143,6 +147,8 @@ public class ItemController {
 			return new ResponseEntity<Object>("Le type ne peut pas être vide", HttpStatus.BAD_REQUEST);
 		}
 		try {
+			//Set the default room
+			item.setRoom(roomRepo.findByName("Stock").orElse(null));
 			//Create the item
 			item.setId(itemRepo.create(item));
 			//Add it's reference to the licences
