@@ -9,7 +9,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
-import be.chrverviers.stockmanager.Domain.Models.Room;
 import be.chrverviers.stockmanager.Domain.Models.Unit;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;
 

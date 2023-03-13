@@ -2,7 +2,6 @@ package be.chrverviers.stockmanager.Repositories.Interfaces;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface IRepository<T> {
 	

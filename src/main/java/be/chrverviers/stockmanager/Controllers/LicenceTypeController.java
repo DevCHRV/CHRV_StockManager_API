@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,9 +15,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import be.chrverviers.stockmanager.Domain.Models.LicenceType;
-import be.chrverviers.stockmanager.Domain.Models.Type;
 import be.chrverviers.stockmanager.Repositories.LicenceTypeRepository;
-import be.chrverviers.stockmanager.Repositories.TypeRepository;
 
 @RestController
 @RequestMapping(value = "api/licence/type", produces= "application/json")
@@ -30,6 +29,7 @@ public class LicenceTypeController {
 	 * Simple GET method
 	 * @return all the LicenceTypes
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping(value = "")
 	public @ResponseBody ResponseEntity<List<LicenceType>> get() {
 		return new ResponseEntity<List<LicenceType>>(typeRepo.findAll(), HttpStatus.OK);
@@ -40,6 +40,7 @@ public class LicenceTypeController {
 	 * @param id the id of the licence type you're looking for
 	 * @return the licence type or null
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping(value = "/{id}")
 	public @ResponseBody ResponseEntity<LicenceType> findById(@PathVariable("id") int id) {
 		return new ResponseEntity<LicenceType>(typeRepo.findById(id).orElse(null), HttpStatus.OK);
@@ -49,6 +50,7 @@ public class LicenceTypeController {
 	 * Simple POST method
 	 * @return the licence type with it's generated id or an error message
 	 */
+	@PreAuthorize("hasRole('ADM')")
 	@PostMapping(value = "/save")
 	public @ResponseBody ResponseEntity<LicenceType> save() {
 		//TODO the method

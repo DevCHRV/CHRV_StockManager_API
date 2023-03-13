@@ -6,7 +6,6 @@ import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.In
 import be.chrverviers.stockmanager.Controllers.ResponsibilityChains.Interface.ResponsibilityChain;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
 import be.chrverviers.stockmanager.Domain.Models.Item;
-import be.chrverviers.stockmanager.Domain.Models.Room;
 import be.chrverviers.stockmanager.Repositories.ItemRepository;
 import be.chrverviers.stockmanager.Repositories.RoomRepository;
 

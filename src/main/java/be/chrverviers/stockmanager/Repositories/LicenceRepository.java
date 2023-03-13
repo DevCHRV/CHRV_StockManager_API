@@ -9,11 +9,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -140,9 +135,6 @@ public class LicenceRepository implements IRepository<Licence>{
 
 	@Override
 	public int create(Licence t) {
-		Integer userId = t.getUser()!=null ? t.getUser().getId() : null;
-		Integer itemId = t.getItem()!=null ? t.getItem().getId() : null;
-		
 		GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
 
 		String query = "INSERT INTO CCLIB.LICENCE (ID, DESCRIPTION, VALUE, TYPE_ID, REFERENCE, PURCHASED_AT) VALUES (DEFAULT, ?, ?, ?, ?, ?)";
@@ -211,6 +203,16 @@ public class LicenceRepository implements IRepository<Licence>{
 	public int getCountForCurrentMonth() {
 		String query = "SELECT COUNT(*) FROM CCLIB.LICENCE WHERE MONTH(PURCHASED_AT) = MONTH(CURRENT_DATE) AND YEAR(PURCHASED_AT) = YEAR(CURRENT_DATE)";
 	    return template.queryForObject(query, intMapper);	
+	}
+	
+	public int getCountForCurrentMonthForType(LicenceType type) {
+		return this.getCountForCurrentMonthForType(type.getId());
+	}
+	
+	public int getCountForCurrentMonthForType(int typeId) {
+		String query = "SELECT COUNT(*) FROM CCLIB.LICENCE WHERE MONTH(PURCHASED_AT) = MONTH(CURRENT_DATE) AND YEAR(PURCHASED_AT) = YEAR(CURRENT_DATE) AND TYPE_ID = ?";
+	    
+		return template.queryForObject(query, intMapper, typeId);	
 	}
 	
 	private User mapUser(ResultSet rs, int rowNum) {

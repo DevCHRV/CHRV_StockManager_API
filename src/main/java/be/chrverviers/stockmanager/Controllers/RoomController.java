@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +35,7 @@ public class RoomController {
 	 * @return all the items types
 	 */
 	@GetMapping(value = "")
+	@PreAuthorize("hasRole('TEC')")
 	public @ResponseBody ResponseEntity<List<Room>> get() {
 		return new ResponseEntity<List<Room>>(roomRepo.findAll(), HttpStatus.OK);
 	}

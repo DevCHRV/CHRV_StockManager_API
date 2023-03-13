@@ -10,21 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import be.chrverviers.stockmanager.Domain.Models.Item;
-import be.chrverviers.stockmanager.Domain.Models.Licence;
 import be.chrverviers.stockmanager.Domain.Models.Order;
 import be.chrverviers.stockmanager.Domain.Models.Room;
 import be.chrverviers.stockmanager.Domain.Models.Type;
@@ -303,9 +296,30 @@ public class ItemRepository implements IRepository<Item> {
 		return false;
 	}
 	
+	public boolean delete(Order order) {
+		try {
+			String query = "DELETE FROM CCLIB.ORDER_ITEM WHERE ORDER_ID = ?";
+			template.update(query, order.getId());
+			
+			return true;
+		} catch(DataAccessException e) {
+			return false;
+		}
+	}
+	
 	public int getCountForCurrentMonth() {
 		String query = "SELECT SUM(c) FROM (SELECT COUNT(*) AS c FROM CCLIB.ITEM WHERE MONTH(PURCHASED_AT) = MONTH(CURRENT_DATE) AND YEAR(PURCHASED_AT) = YEAR(CURRENT_DATE) UNION ALL SELECT COUNT(*) FROM CCLIB.ORDER_ITEM WHERE MONTH(PURCHASED_AT) = MONTH(CURRENT_DATE) AND YEAR(PURCHASED_AT) = YEAR(CURRENT_DATE))";
 		
 	    return template.queryForObject(query, intMapper);	
     }
+	
+	public int getCountForCurrentMonthForType(Type type) {
+		return this.getCountForCurrentMonthForType(type.getId());
+	}
+	
+	public int getCountForCurrentMonthForType(int typeId) {
+		String query = "SELECT SUM(c) FROM (SELECT COUNT(*) AS c FROM CCLIB.ITEM WHERE MONTH(PURCHASED_AT) = MONTH(CURRENT_DATE) AND YEAR(PURCHASED_AT) = YEAR(CURRENT_DATE) AND TYPE_ID = ? UNION ALL SELECT COUNT(*) FROM CCLIB.ORDER_ITEM WHERE MONTH(PURCHASED_AT) = MONTH(CURRENT_DATE) AND YEAR(PURCHASED_AT) = YEAR(CURRENT_DATE) AND TYPE_ID = ?)";
+		
+	    return template.queryForObject(query, intMapper, typeId, typeId);	
+	}
 }

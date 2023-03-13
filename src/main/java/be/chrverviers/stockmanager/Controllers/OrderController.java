@@ -2,7 +2,6 @@ package be.chrverviers.stockmanager.Controllers;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -13,9 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,6 +64,7 @@ public class OrderController {
 	 * Simple GET method
 	 * @return all the orders
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping
 	public @ResponseBody ResponseEntity<List<Order>> get() {
 		return new ResponseEntity<List<Order>>(orderRepo.findAll(), HttpStatus.OK);
@@ -76,6 +75,7 @@ public class OrderController {
 	 * @param id the id of the order you're looking for
 	 * @return the order or an error message
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping(value = "/{id}")
 	public @ResponseBody ResponseEntity<Object> getById(@PathVariable("id") int id) {
 		//Get the order
@@ -101,6 +101,7 @@ public class OrderController {
 	 * @param request the order you wan't to update
 	 * @return the order you're looking to update or an error message
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@PutMapping(value="/{id}")
 	public @ResponseBody ResponseEntity<Object> update(@PathVariable("id") int id, @RequestBody OrderDTO request){
 		logger.info(String.format("User '%s' is updating Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
@@ -121,6 +122,7 @@ public class OrderController {
 				order.getItems().forEach(i->i.setRoom(roomRepo.findByName("Stock").orElse(null)));
 				//We set the order's items as received and insert them in the main Item table
 				itemRepo.createAll(order.getItems(), order);
+				itemRepo.delete(order);
 				//As we are working with a DTO that isn't complete, we're sending back the completely rebuilt object
 				//To avoid problems
 				logger.info(String.format("User '%s' has successfully completed Order with id:'%s'", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal(), id));
@@ -153,6 +155,7 @@ public class OrderController {
 	 * Deserialize for some reason, so must conform to the OrderDTO interface instead
 	 * @return the order with it's generated id or an error message
 	 */
+	@PreAuthorize("hasRole('PGM')")
   	@PostMapping(value = "/")
 	public @ResponseBody Object save(@RequestBody OrderCreationDTO request) {
 		logger.info(String.format("User '%s' is creating a new Order", (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
@@ -170,7 +173,7 @@ public class OrderController {
 			try {
 				for(OrderCreationTypeDTO type: request.getTypes()) {
 					for(OrderCreationItemDTO item: type.getItems()) {
-				  		int monthlyCount = itemRepo.getCountForCurrentMonth();
+				  		int monthlyCount = itemRepo.getCountForCurrentMonthForType(type.getId());
 						for(int i=0; i<item.getQuantity(); i++) {
 							Item tmp = new Item();
 							tmp.setType(type.toItemType());

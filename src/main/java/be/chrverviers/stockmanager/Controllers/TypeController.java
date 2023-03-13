@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +30,7 @@ public class TypeController {
 	 * @return all the items types
 	 */
 	@GetMapping(value = "")
+	@PreAuthorize("hasRole('TEC')")
 	public @ResponseBody ResponseEntity<List<Type>> get() {
 		return new ResponseEntity<List<Type>>(typeRepo.findAll(), HttpStatus.OK);
 	}
@@ -39,6 +41,7 @@ public class TypeController {
 	 * @return the type or an error message
 	 */
 	@GetMapping(value = "/{id}")
+	@PreAuthorize("hasRole('TEC')")
 	public @ResponseBody ResponseEntity<Object> findById(@PathVariable("id") int id) {
 		Type t = typeRepo.findById(id).orElse(null);
 		if(t==null)
@@ -51,6 +54,7 @@ public class TypeController {
 	 * @return the type with it's generated id or an error message
 	 */
 	@PostMapping(value = "/save")
+	@PreAuthorize("hasRole('PGM')")
 	public @ResponseBody ResponseEntity<Integer> save() {
 		//TODO
 		return null;

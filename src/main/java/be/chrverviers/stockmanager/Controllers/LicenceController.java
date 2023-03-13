@@ -2,8 +2,6 @@ package be.chrverviers.stockmanager.Controllers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +20,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import be.chrverviers.stockmanager.Domain.DTO.LicenceCreationDTO;
-import be.chrverviers.stockmanager.Domain.DTO.LicenceCreationLicenceDTO;
-import be.chrverviers.stockmanager.Domain.DTO.OrderCreationItemDTO;
-import be.chrverviers.stockmanager.Domain.DTO.OrderCreationTypeDTO;
-import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Licence;
 import be.chrverviers.stockmanager.Domain.Models.LicenceType;
 import be.chrverviers.stockmanager.Domain.Models.User;
@@ -49,6 +43,7 @@ public class LicenceController {
 	 * Simple GET method
 	 * @return all the licences
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping
 	public @ResponseBody ResponseEntity<List<Licence>> get() {
 		return new ResponseEntity<List<Licence>>(licenceRepo.findAll(), HttpStatus.OK);
@@ -119,7 +114,7 @@ public class LicenceController {
 		List<LicenceCreationDTO> list = request.toLicenceDTOList();
 		List<Licence> licences = new ArrayList<Licence>();
 		
-		int monthlyCount = licenceRepo.getCountForCurrentMonth();
+		int monthlyCount = licenceRepo.getCountForCurrentMonthForType(request.getType());
 		for(LicenceCreationDTO tmp: list) {
 			try {
 				//Save the licence

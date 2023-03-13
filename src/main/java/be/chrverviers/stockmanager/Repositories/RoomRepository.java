@@ -1,6 +1,5 @@
 package be.chrverviers.stockmanager.Repositories;
 
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -12,10 +11,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
-import com.ibm.db2.cmx.PushDownError.SQLException;
-
-import be.chrverviers.stockmanager.Domain.Models.Item;
-import be.chrverviers.stockmanager.Domain.Models.Licence;
 import be.chrverviers.stockmanager.Domain.Models.Room;
 import be.chrverviers.stockmanager.Domain.Models.Unit;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;

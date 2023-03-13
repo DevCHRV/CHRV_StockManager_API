@@ -12,9 +12,6 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
 import be.chrverviers.stockmanager.Domain.Models.InterventionType;
-import be.chrverviers.stockmanager.Domain.Models.Item;
-import be.chrverviers.stockmanager.Domain.Models.Licence;
-import be.chrverviers.stockmanager.Domain.Models.LicenceType;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;
 
 @Repository

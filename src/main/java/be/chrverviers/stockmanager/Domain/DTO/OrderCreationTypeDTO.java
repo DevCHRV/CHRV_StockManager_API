@@ -3,9 +3,6 @@ package be.chrverviers.stockmanager.Domain.DTO;
 import java.util.Collections;
 import java.util.List;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-
 import be.chrverviers.stockmanager.Domain.Models.Type;
 
 public class OrderCreationTypeDTO {

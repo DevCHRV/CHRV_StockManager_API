@@ -43,6 +43,7 @@ public class UnitController {
 	 * Simple GET method
 	 * @return all the items types
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping(value = "")
 	public @ResponseBody ResponseEntity<List<Unit>> get() {
 		return new ResponseEntity<List<Unit>>(unitRepo.findAll(), HttpStatus.OK);
@@ -53,6 +54,7 @@ public class UnitController {
 	 * @param id the id of the item type you're looking for
 	 * @return the type or an error message
 	 */
+	@PreAuthorize("hasRole('TEC')")
 	@GetMapping(value = "/{id}")
 	public @ResponseBody ResponseEntity<Object> findById(@PathVariable("id") int id) {
 		Unit t = unitRepo.findById(id).orElse(null);

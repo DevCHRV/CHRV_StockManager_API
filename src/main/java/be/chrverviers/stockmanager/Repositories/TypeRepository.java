@@ -10,7 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-import be.chrverviers.stockmanager.Domain.Models.Item;
 import be.chrverviers.stockmanager.Domain.Models.Order;
 import be.chrverviers.stockmanager.Domain.Models.Type;
 import be.chrverviers.stockmanager.Repositories.Interfaces.IRepository;

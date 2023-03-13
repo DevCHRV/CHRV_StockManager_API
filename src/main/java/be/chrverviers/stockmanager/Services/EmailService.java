@@ -10,7 +10,7 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.PostConstruct;
-import javax.mail.Address;
+import javax.annotation.PreDestroy;
 import javax.mail.Flags;
 import javax.mail.Flags.Flag;
 import javax.mail.Folder;
@@ -27,18 +27,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.integration.mail.ImapMailReceiver;
 import org.springframework.integration.mail.MailReceiver;
-import org.springframework.integration.mail.Pop3MailReceiver;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import be.chrverviers.stockmanager.Controllers.AuthController;
 import be.chrverviers.stockmanager.Domain.Models.Intervention;
-import be.chrverviers.stockmanager.Domain.Models.User;
 import be.chrverviers.stockmanager.Repositories.InterventionRepository;
 
 @Service
@@ -95,7 +91,6 @@ public class EmailService {
     @PostConstruct
     void setup() {
 		logger.info("Setting up IMAP mail connection");
-    	MailReceiver receiver = new ImapMailReceiver("imap.chrverviers.be");
         properties.put("mail.imap.host", host);
         properties.put("mail.imap.port", port);
         properties.put("mail.imap.username", username);
@@ -112,11 +107,13 @@ public class EmailService {
             logger.error(String.format("The application has failed to establish a connection to the mailbox with following exception: \n%s", e.getMessage()));
         }
     }
-
+   
     @Scheduled(fixedRate = 5000)
     synchronized void read() throws MessagingException, IOException {
     	//The write permission is important  because we won't be able to set the message as READ otherwise
-        emailFolder.open(Folder.READ_WRITE);
+    	if(!emailFolder.isOpen()) {
+    		emailFolder.open(Folder.READ_WRITE);
+    	}
         try {
         	//We basically fetch all unread messages
             Message[] messages = emailFolder.search(new FlagTerm(new Flags(Flags.Flag.SEEN), false));
@@ -182,7 +179,14 @@ public class EmailService {
  
         } finally {
         	//This is also important because if we don't close the resource, trying to open the folder on the next call will give us a nice big ol' stacktrace
-            emailFolder.close();
+        	try {
+                if(emailFolder.isOpen()) {
+                	emailFolder.close();
+                }
+        	} catch (NoSuchMethodError e) {
+        		//This is a weird Websphere bug. Don't really know what to do to fix it
+        		//It doesn't happen when launching the application outside the Websphere server.
+        	}
         }
     }
     
